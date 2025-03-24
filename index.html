@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análisis de Kaspa</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+        #resultados {
+            margin-top: 20px;
+        }
+        .dato {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .precio { background-color: #e3f2fd; }
+        .sma { background-color: #f1f8e9; }
+        .recomendacion {
+            font-weight: bold;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+        }
+        .comprar { background-color: #4caf50; color: white; }
+        .vender { background-color: #f44336; color: white; }
+        .esperar { background-color: #ff9800; color: white; }
+        .mantener { background-color: #9e9e9e; color: white; }
+        #loading {
+            text-align: center;
+            color: #666;
+        }
+        #ultima-actualizacion {
+            text-align: center;
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Análisis de Kaspa</h1>
+        <div id="loading">Cargando datos...</div>
+        <div id="resultados"></div>
+        <div id="ultima-actualizacion"></div>
+    </div>
+
+    <script>
+        async function analizarKaspa() {
+            const resultadosDiv = document.getElementById('resultados');
+            const loadingDiv = document.getElementById('loading');
+            const ultimaActualizacionDiv = document.getElementById('ultima-actualizacion');
+            
+            // Mostrar loading y limpiar resultados
+            loadingDiv.style.display = 'block';
+            resultadosDiv.innerHTML = '';
+
+            try {
+                // Obtener datos
+                const precioActualResponse = await fetch(
+                    'https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd'
+                );
+                const datosHistoricosResponse = await fetch(
+                    'https://api.coingecko.com/api/v3/coins/kaspa/market_chart?vs_currency=usd&days=14&interval=daily'
+                );
+
+                const precioActual = await precioActualResponse.json();
+                const datosHistoricos = await datosHistoricosResponse.json();
+
+                // Extraer datos
+                const precioKaspa = precioActual.kaspa.usd;
+                const precios = datosHistoricos.prices;
+
+                // Calcular SMAs
+                const smaCorto = calcularSMA(precios.slice(-5));
+                const smaLargo = calcularSMA(precios.slice(-14));
+
+                // Obtener recomendación
+                const recomendacion = analizarTendencia(precioKaspa, smaCorto, smaLargo);
+
+                // Mostrar resultados en el DOM
+                resultadosDiv.innerHTML = `
+                    <div class="dato precio">Precio actual: $${precioKaspa}</div>
+                    <div class="dato sma">SMA 5 días: $${smaCorto}</div>
+                    <div class="dato sma">SMA 14 días: $${smaLargo}</div>
+                    <div class="recomendacion ${recomendacion.split(' -')[0].toLowerCase()}">
+                        ${recomendacion}
+                    </div>
+                `;
+
+                // Mostrar fecha y hora de última actualización
+                const ahora = new Date().toLocaleString('es-ES');
+                ultimaActualizacionDiv.textContent = `Última actualización: ${ahora}`;
+
+            } catch (error) {
+                resultadosDiv.innerHTML = `<div class="recomendacion vender">Error: ${error.message}</div>`;
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+
+        function calcularSMA(precios) {
+            const suma = precios.reduce((acc, [_, precio]) => acc + precio, 0);
+            return Number((suma / precios.length).toFixed(4));
+        }
+
+        function analizarTendencia(precioActual, smaCorto, smaLargo) {
+            const tendenciaAlcista = smaCorto > smaLargo;
+            const tendenciaBajista = smaCorto < smaLargo;
+            const diferenciaPorcentual = ((precioActual - smaCorto) / smaCorto) * 100;
+
+            if (tendenciaAlcista && precioActual > smaCorto && diferenciaPorcentual < 5) {
+                return "COMPRAR - Tendencia alcista confirmada";
+            } else if (tendenciaBajista && precioActual < smaCorto && diferenciaPorcentual > -5) {
+                return "VENDER - Tendencia bajista confirmada";
+            } else if (diferenciaPorcentual > 10) {
+                return "ESPERAR - Posible sobrecompra";
+            } else if (diferenciaPorcentual < -10) {
+                return "ESPERAR - Posible sobreventa";
+            } else {
+                return "MANTENER - Sin tendencia clara";
+            }
+        }
+
+        // Ejecutar al cargar la página
+        window.onload = analizarKaspa;
+
+        // Actualizar automáticamente cada 5 minutos (300,000 ms)
+        setInterval(analizarKaspa, 20000);
+    </script>
+</body>
+</html>
