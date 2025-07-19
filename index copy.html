@@ -61,61 +61,6 @@
         #chart-container {
             margin-top: 20px;
         }
-        #chat-container {
-            max-width: 600px;
-            margin: 20px auto;
-            border: 1px solid #ccc;
-            padding: 10px;
-            height: 400px;
-            overflow-y: auto;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        #chat-messages {
-            margin-bottom: 10px;
-        }
-        .message {
-            margin: 5px 0;
-            padding: 5px;
-            border-radius: 5px;
-        }
-        .user-message {
-            background-color: #e0f7fa;
-            text-align: right;
-        }
-        .bot-message {
-            background-color: #f0f0f0;
-            text-align: left;
-        }
-        #input-container {
-            display: flex;
-            gap: 10px;
-        }
-        #message-input {
-            flex-grow: 1;
-            padding: 5px;
-        }
-        #send-button {
-            padding: 5px 10px;
-        }
-        /* Estilo para el botón flotante */
-        #copy-button {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 10px 20px;
-            background-color: #4caf50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            z-index: 1000;
-        }
-        #copy-button:hover {
-            background-color: #45a049;
-        }
     </style>
 </head>
 <body>
@@ -130,21 +75,6 @@
     </div>
     <audio id="alertSound" src="https://www.soundjay.com/buttons/beep-01a.mp3" preload="auto"></audio>
 
-    <div id="chat-container">
-        <div id="chat-messages">
-            <!-- Mensajes iniciales de la conversación (simulados) -->
-            <div class="message bot-message">¡Hola! Estoy aquí para ayudarte con tus consultas sobre Kaspa o cualquier tema.</div>
-            <div class="message user-message">Quiero saber cómo scalping con Kaspa.</div>
-            <div class="message bot-message">Claro, puedo darte recomendaciones de scalping basadas en el análisis del mercado. ¿Qué datos actuales tienes?</div>
-        </div>
-        <div id="input-container">
-            <input type="text" id="message-input" placeholder="Escribe tu mensaje...">
-            <button id="send-button">Enviar</button>
-        </div>
-    </div>
-
-    <button id="copy-button">Copiar Datos</button>
-
     <script>
         let chart; // Variable global para el gráfico
 
@@ -153,7 +83,6 @@
             const loadingDiv = document.getElementById('loading');
             const ultimaActualizacionDiv = document.getElementById('ultima-actualizacion');
             const alertSound = document.getElementById('alertSound');
-            const copyButton = document.getElementById('copy-button');
             
             loadingDiv.style.display = 'block';
             resultadosDiv.innerHTML = '';
@@ -213,20 +142,6 @@
 
                 const ahora = new Date().toLocaleString('es-ES');
                 ultimaActualizacionDiv.textContent = `Última actualización: ${ahora}`;
-
-                // Actualizar texto para copiar
-                const textoCopiar = `
-Precio actual: $${precioKaspa}
-SMA 5 días: $${smaCorto}
-SMA 14 días: $${smaLargo}
-Soporte: $${soporte.toFixed(4)}
-Resistencia: $${resistencia.toFixed(4)}
-ATR (aprox.): $${atr.toFixed(4)}
-Fibonacci 38.2%: $${fiboLevels['38.2'].toFixed(4)}
-Fibonacci 61.8%: $${fiboLevels['61.8'].toFixed(4)}
-${recomendacion}
-                `.trim();
-                copyButton.setAttribute('data-clipboard-text', textoCopiar);
 
             } catch (error) {
                 resultadosDiv.innerHTML = `<div class="recomendacion vender">Error: ${error.message}</div>`;
@@ -374,58 +289,6 @@ ${recomendacion}
 
         window.onload = analizarKaspa;
         setInterval(analizarKaspa, 300000); // Actualiza cada 5 minutos
-
-        // Script para el chat
-        const chatMessages = document.getElementById('chat-messages');
-        const messageInput = document.getElementById('message-input');
-        const sendButton = document.getElementById('send-button');
-
-        sendButton.addEventListener('click', () => {
-            const message = messageInput.value.trim();
-            if (message) {
-                // Mostrar mensaje del usuario
-                const userMessage = document.createElement('div');
-                userMessage.className = 'message user-message';
-                userMessage.textContent = message;
-                chatMessages.appendChild(userMessage);
-                messageInput.value = '';
-
-                // Simular respuesta del bot
-                setTimeout(() => {
-                    const botResponse = document.createElement('div');
-                    botResponse.className = 'message bot-message';
-                    if (message.toLowerCase().includes('kaspa')) {
-                        botResponse.textContent = 'Puedo analizar el mercado de Kaspa o darte consejos de scalping. ¿Qué te gustaría saber?';
-                    } else {
-                        botResponse.textContent = 'Gracias por tu mensaje. ¿En qué más puedo ayudarte?';
-                    }
-                    chatMessages.appendChild(botResponse);
-                    chatMessages.scrollTop = chatMessages.scrollHeight;
-                }, 500);
-
-                chatMessages.scrollTop = chatMessages.scrollHeight;
-            }
-        });
-
-        messageInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && messageInput.value.trim()) {
-                sendButton.click();
-            }
-        });
-
-        // Script para el botón de copiar
-        const copyButton = document.getElementById('copy-button');
-        copyButton.addEventListener('click', () => {
-            const textoCopiar = copyButton.getAttribute('data-clipboard-text');
-            if (textoCopiar) {
-                navigator.clipboard.writeText(textoCopiar).then(() => {
-                    alert('Datos copiados al portapapeles!');
-                }).catch(err => {
-                    console.error('Error al copiar: ', err);
-                    alert('Error al copiar los datos.');
-                });
-            }
-        });
     </script>
 </body>
 </html>
