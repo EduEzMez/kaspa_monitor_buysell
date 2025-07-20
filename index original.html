@@ -261,23 +261,19 @@
                     alertSound.play().catch(err => console.log("Error al reproducir sonido:", err));
                 }
 
-                const ahora = new Date().toLocaleString('es-ES', { timeZone: 'America/Argentina/Buenos_Aires' }).replace(/,/, '');
+                const ahora = new Date().toLocaleString('es-ES');
                 ultimaActualizacionDiv.textContent = `Última actualización: ${ahora}`;
 
-                // Datos específicos para el botón de copiar
                 const textoCopiar = `
-Análisis de Kaspa
-Precio actual: $0.095353
-SMA 5 días: $0.0941
-SMA 14 días: $0.0871
-Soporte: $0.0754
-Resistencia: $0.0954
-ATR (aprox.): $0.0024
-Fibonacci 38.2%: $0.0830
-Fibonacci 61.8%: $0.0877
-COMPRAR - Tendencia alcista confirmada
-Precio sugerido de compra: ~$0.0778 (soporte + ATR o Fib 38.2%)
-Última actualización: 19/7/2025, 22:32:22
+Precio actual: $${currentPrice}
+SMA 5 días: $${smaCorto}
+SMA 14 días: $${smaLargo}
+Soporte: $${soporte.toFixed(4)}
+Resistencia: $${resistencia.toFixed(4)}
+ATR (aprox.): $${atr.toFixed(4)}
+Fibonacci 38.2%: $${fiboLevels['38.2'].toFixed(4)}
+Fibonacci 61.8%: $${fiboLevels['61.8'].toFixed(4)}
+${recomendacion}
                 `.trim();
                 copyButton.setAttribute('data-clipboard-text', textoCopiar);
 
