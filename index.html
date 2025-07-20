@@ -6,17 +6,19 @@
     <title>Análisis de Kaspa</title>
     <link rel="icon" type="image/png" href="https://i0.wp.com/kaspa.org/wp-content/uploads/2023/06/Kaspa-Icon-16.png?resize=16%2C16&ssl=1">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
     <style>
         body {
             font-family: Arial, sans-serif;
             max-width: 800px;
             margin: 20px auto;
             padding: 20px;
-            background-color: #f0f0f0; /* Modo claro por defecto */
+            background-color: #f0f0f0;
             transition: background-color 0.3s;
         }
         body.dark-mode {
-            background-color: #1e1e1e; /* Modo oscuro */
+            background-color: #1e1e1e;
             color: #e0e0e0;
         }
         .container {
@@ -87,53 +89,46 @@
         #chart-container {
             margin-top: 20px;
         }
-        /* Estilo para el botón flotante de copiar */
-        #copy-button {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 10px 20px;
+        #target-container {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        body.dark-mode #target-container {
+            background-color: #2e2e2e;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        #target-input {
+            padding: 5px;
+            width: 150px;
+            margin-right: 10px;
+        }
+        #save-target-button {
+            padding: 5px 10px;
             background-color: #4caf50;
             color: white;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            z-index: 1000;
         }
-        #copy-button:hover {
+        #save-target-button:hover {
             background-color: #45a049;
         }
-        body.dark-mode #copy-button {
+        body.dark-mode #save-target-button {
             background-color: #45a049;
         }
-        body.dark-mode #copy-button:hover {
+        body.dark-mode #save-target-button:hover {
             background-color: #3d8b40;
         }
-        /* Estilo para el botón de tema */
-        #theme-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 10px 15px;
-            background-color: #666;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            z-index: 1000;
+        #target-value {
+            margin-top: 10px;
+            font-weight: bold;
         }
-        #theme-toggle:hover {
-            background-color: #555;
+        body.dark-mode #target-value {
+            color: #e0e0e0;
         }
-        body.dark-mode #theme-toggle {
-            background-color: #888;
-        }
-        body.dark-mode #theme-toggle:hover {
-            background-color: #999;
-        }
-        /* Estilo para el campo de cálculo de Kaspa */
         #kaspa-calculator {
             margin-top: 20px;
             padding: 15px;
@@ -174,6 +169,50 @@
         body.dark-mode #kaspa-value {
             color: #e0e0e0;
         }
+        #copy-button {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        #copy-button:hover {
+            background-color: #45a049;
+        }
+        body.dark-mode #copy-button {
+            background-color: #45a049;
+        }
+        body.dark-mode #copy-button:hover {
+            background-color: #3d8b40;
+        }
+        #theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 15px;
+            background-color: #666;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 1000;
+        }
+        #theme-toggle:hover {
+            background-color: #555;
+        }
+        body.dark-mode #theme-toggle {
+            background-color: #888;
+        }
+        body.dark-mode #theme-toggle:hover {
+            background-color: #999;
+        }
     </style>
 </head>
 <body>
@@ -194,10 +233,30 @@
         <div id="kaspa-value"></div>
     </div>
 
+    <div id="target-container">
+        <input type="number" id="target-input" placeholder="Valor objetivo (USD)" min="0" step="0.0001">
+        <button id="save-target-button">Guardar Objetivo</button>
+        <div id="target-value"></div>
+    </div>
+
     <button id="copy-button">Copiar Datos</button>
     <button id="theme-toggle">Modo Oscuro</button>
 
     <script>
+        // Inicializar Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyChKX3o7GeGx8e9KQY59rtyzmrEsF28w5k",
+            authDomain: "kaspa-fb0af.firebaseapp.com",
+            projectId: "kaspa-fb0af",
+            storageBucket: "kaspa-fb0af.firebasestorage.app",
+            messagingSenderId: "1087533832574",
+            appId: "1:1087533832574:web:8753bc5e526fab3d20fb2f",
+            measurementId: "G-VHTGLDHTPJ"
+        };
+
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
         let chart; // Variable global para el gráfico
         let currentPrice = 0; // Variable para almacenar el precio actual de Kaspa
 
@@ -223,6 +282,9 @@
                 const datosHistoricos = await datosHistoricosResponse.json();
 
                 currentPrice = precioActual.kaspa.usd; // Guardar el precio actual
+                // Actualizar el precio actual en Firebase
+                firebase.database().ref('currentPrice').set(currentPrice);
+
                 const precios = datosHistoricos.prices;
 
                 const smaCorto = calcularSMA(precios.slice(-5));
@@ -276,6 +338,9 @@ Fibonacci 61.8%: $${fiboLevels['61.8'].toFixed(4)}
 ${recomendacion}
                 `.trim();
                 copyButton.setAttribute('data-clipboard-text', textoCopiar);
+
+                // Verificar si se alcanzó el objetivo
+                checkTargetPrice(currentPrice);
 
             } catch (error) {
                 resultadosDiv.innerHTML = `<div class="recomendacion vender">Error: ${error.message}</div>`;
@@ -458,6 +523,42 @@ ${recomendacion}
             const valueInUSD = amount * currentPrice;
             kaspaValue.textContent = `Valor en USD: $${valueInUSD.toFixed(4)}`;
         });
+
+        // Script para el valor objetivo con Firebase
+        const targetInput = document.getElementById('target-input');
+        const saveTargetButton = document.getElementById('save-target-button');
+        const targetValue = document.getElementById('target-value');
+
+        saveTargetButton.addEventListener('click', () => {
+            const targetPrice = parseFloat(targetInput.value);
+            if (isNaN(targetPrice) || targetPrice <= 0) {
+                targetValue.textContent = 'Por favor, ingresa un valor objetivo válido.';
+                return;
+            }
+            const targetRef = firebase.database().ref('targets/' + Date.now()); // Usar timestamp como clave única
+            targetRef.set(targetPrice)
+                .then(() => {
+                    targetValue.textContent = `Objetivo guardado: $${targetPrice.toFixed(4)}`;
+                })
+                .catch(error => {
+                    targetValue.textContent = `Error al guardar: ${error.message}`;
+                });
+        });
+
+        function checkTargetPrice(currentPrice) {
+            const targetsRef = firebase.database().ref('targets');
+            targetsRef.on('value', (snapshot) => {
+                snapshot.forEach((childSnapshot) => {
+                    const targetPrice = childSnapshot.val();
+                    if (currentPrice >= targetPrice) {
+                        targetValue.textContent = `¡Alerta! Precio alcanzado: $${currentPrice.toFixed(4)}`;
+                        alert(`¡El precio de Kaspa ha alcanzado o superado tu objetivo de $${targetPrice}!`);
+                        // Opcional: eliminar el objetivo alcanzado
+                        childSnapshot.ref.remove();
+                    }
+                });
+            });
+        }
     </script>
 </body>
 </html>
