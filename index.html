@@ -264,8 +264,8 @@
                 const ahora = new Date().toLocaleString('es-ES', { timeZone: 'America/Argentina/Buenos_Aires' }).replace(/,/, '');
                 ultimaActualizacionDiv.textContent = `Última actualización: ${ahora}`;
 
-                // Datos específicos para el botón de copiar
-                const textoCopiar = `
+                // Datos específicos para el botón de copiar con fecha y hora actualizadas
+                const textoCopiarBase = `
 Análisis de Kaspa
 Precio actual: $0.095353
 SMA 5 días: $0.0941
@@ -277,8 +277,9 @@ Fibonacci 38.2%: $0.0830
 Fibonacci 61.8%: $0.0877
 COMPRAR - Tendencia alcista confirmada
 Precio sugerido de compra: ~$0.0778 (soporte + ATR o Fib 38.2%)
-Última actualización: 19/7/2025, 22:32:22
-                `.trim();
+Última actualización: `;
+                const ahoraCopiar = new Date().toLocaleString('es-ES', { timeZone: 'America/Argentina/Buenos_Aires' }).replace(/,/, '');
+                const textoCopiar = textoCopiarBase + ahoraCopiar;
                 copyButton.setAttribute('data-clipboard-text', textoCopiar);
 
             } catch (error) {
@@ -430,7 +431,21 @@ Precio sugerido de compra: ~$0.0778 (soporte + ATR o Fib 38.2%)
         // Script para el botón de copiar
         const copyButton = document.getElementById('copy-button');
         copyButton.addEventListener('click', () => {
-            const textoCopiar = copyButton.getAttribute('data-clipboard-text');
+            const textoCopiarBase = `
+Análisis de Kaspa
+Precio actual: $0.095353
+SMA 5 días: $0.0941
+SMA 14 días: $0.0871
+Soporte: $0.0754
+Resistencia: $0.0954
+ATR (aprox.): $0.0024
+Fibonacci 38.2%: $0.0830
+Fibonacci 61.8%: $0.0877
+COMPRAR - Tendencia alcista confirmada
+Precio sugerido de compra: ~$0.0778 (soporte + ATR o Fib 38.2%)
+Última actualización: `;
+            const ahoraCopiar = new Date().toLocaleString('es-ES', { timeZone: 'America/Argentina/Buenos_Aires' }).replace(/,/, '');
+            const textoCopiar = textoCopiarBase + ahoraCopiar;
             if (textoCopiar) {
                 navigator.clipboard.writeText(textoCopiar).then(() => {
                     alert('Datos copiados al portapapeles!');
