@@ -7,198 +7,56 @@
     <link rel="icon" type="image/png" href="https://i0.wp.com/kaspa.org/wp-content/uploads/2023/06/Kaspa-Icon-16.png?resize=16%2C16&ssl=1">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 20px;
-            background-color: #f0f0f0;
-            transition: background-color 0.3s;
-        }
-        body.dark-mode {
-            background-color: #1e1e1e;
-            color: #e0e0e0;
-        }
-        .container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        body.dark-mode .container {
-            background-color: #2e2e2e;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
-        h1, h2 {
-            color: #333;
-            text-align: center;
-        }
-        body.dark-mode h1, body.dark-mode h2 {
-            color: #ffffff;
-        }
-        #resultados {
-            margin-top: 20px;
-        }
-        .dato {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 5px;
-        }
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #f0f0f0; transition: background-color 0.3s; }
+        body.dark-mode { background-color: #1e1e1e; color: #e0e0e0; }
+        .container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        body.dark-mode .container { background-color: #2e2e2e; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        h1, h2 { color: #333; text-align: center; }
+        body.dark-mode h1, body.dark-mode h2 { color: #ffffff; }
+        #resultados { margin-top: 20px; }
+        .dato { margin: 10px 0; padding: 10px; border-radius: 5px; }
         .precio { background-color: #e3f2fd; }
         .sma { background-color: #f1f8e9; }
         .tecnico { background-color: #fff3e0; }
         body.dark-mode .precio { background-color: #4a6b8a; }
         body.dark-mode .sma { background-color: #5a6b4a; }
         body.dark-mode .tecnico { background-color: #8a6b4a; }
-        .recomendacion {
-            font-weight: bold;
-            padding: 15px;
-            text-align: center;
-            border-radius: 5px;
-        }
+        .recomendacion { font-weight: bold; padding: 15px; text-align: center; border-radius: 5px; }
         .comprar { background-color: #4caf50; color: white; }
         .vender { background-color: #f44336; color: white; }
         .esperar { background-color: #ff9800; color: white; }
         .mantener { background-color: #9e9e9e; color: white; }
         body.dark-mode .mantener { background-color: #666666; color: #e0e0e0; }
-        #loading {
-            text-align: center;
-            color: #666;
-        }
-        body.dark-mode #loading {
-            color: #b0b0b0;
-        }
-        #ultima-actualizacion {
-            text-align: center;
-            font-size: 12px;
-            color: #666;
-            margin-top: 10px;
-        }
-        body.dark-mode #ultima-actualizacion {
-            color: #b0b0b0;
-        }
-        .sugerencia {
-            font-style: italic;
-            margin-top: 5px;
-        }
-        body.dark-mode .sugerencia {
-            color: #c0c0c0;
-        }
-        #chart-container {
-            margin-top: 20px;
-        }
-        /* Estilo para el botón de tema */
-        #theme-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 10px 15px;
-            background-color: #666;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            z-index: 1000;
-        }
-        #theme-toggle:hover {
-            background-color: #555;
-        }
-        body.dark-mode #theme-toggle {
-            background-color: #888;
-        }
-        body.dark-mode #theme-toggle:hover {
-            background-color: #999;
-        }
-        /* Estilo para el campo de cálculo de Kaspa */
-        #kaspa-calculator {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        body.dark-mode #kaspa-calculator {
-            background-color: #2e2e2e;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
-        #kaspa-input {
-            padding: 5px;
-            width: 150px;
-            margin-right: 10px;
-        }
-        #calculate-button {
-            padding: 5px 10px;
-            background-color: #4caf50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        #calculate-button:hover {
-            background-color: #45a049;
-        }
-        body.dark-mode #calculate-button {
-            background-color: #45a049;
-        }
-        body.dark-mode #calculate-button:hover {
-            background-color: #3d8b40;
-        }
-        #kaspa-value {
-            margin-top: 10px;
-            font-weight: bold;
-        }
-        body.dark-mode #kaspa-value {
-            color: #e0e0e0;
-        }
-        /* Estilo para el histórico de alertas */
-        #alert-history {
-            margin-top: 30px;
-            padding: 15px;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        body.dark-mode #alert-history {
-            background-color: #2e2e2e;
-        }
-        #alert-list {
-            list-style: none;
-            padding: 0;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        .alert-item {
-            padding: 10px;
-            margin: 8px 0;
-            border-radius: 6px;
-            font-size: 14px;
-            display: flex;
-            justify-content: space-between;
-        }
-        .alert-compra {
-            background-color: #e6ffe6;
-            color: #006400;
-        }
-        body.dark-mode .alert-compra {
-            background-color: #004d00;
-            color: #90ee90;
-        }
-        .alert-venta {
-            background-color: #ffe6e6;
-            color: #8b0000;
-        }
-        body.dark-mode .alert-venta {
-            background-color: #4d0000;
-            color: #ff9999;
-        }
-        .alert-rebote {
-            font-weight: bold;
-            color: #0066cc;
-        }
-        body.dark-mode .alert-rebote {
-            color: #66ccff;
-        }
+        #loading { text-align: center; color: #666; }
+        body.dark-mode #loading { color: #b0b0b0; }
+        #ultima-actualizacion { text-align: center; font-size: 12px; color: #666; margin-top: 10px; }
+        body.dark-mode #ultima-actualizacion { color: #b0b0b0; }
+        .sugerencia { font-style: italic; margin-top: 5px; }
+        body.dark-mode .sugerencia { color: #c0c0c0; }
+        #chart-container { margin-top: 20px; }
+        #theme-toggle { position: fixed; top: 20px; right: 20px; padding: 10px 15px; background-color: #666; color: white; border: none; border-radius: 5px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1000; }
+        #theme-toggle:hover { background-color: #555; }
+        body.dark-mode #theme-toggle { background-color: #888; }
+        body.dark-mode #theme-toggle:hover { background-color: #999; }
+        #kaspa-calculator { margin-top: 20px; padding: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        body.dark-mode #kaspa-calculator { background-color: #2e2e2e; box-shadow: 0 2px 5px rgba(0,0,0,0.3); }
+        #kaspa-input { padding: 5px; width: 150px; margin-right: 10px; }
+        #calculate-button { padding: 5px 10px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        #calculate-button:hover { background-color: #45a049; }
+        body.dark-mode #calculate-button { background-color: #45a049; }
+        body.dark-mode #calculate-button:hover { background-color: #3d8b40; }
+        #kaspa-value { margin-top: 10px; font-weight: bold; }
+        body.dark-mode #kaspa-value { color: #e0e0e0; }
+        #alert-history { margin-top: 30px; padding: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        body.dark-mode #alert-history { background-color: #2e2e2e; }
+        #alert-list { list-style: none; padding: 0; max-height: 400px; overflow-y: auto; }
+        .alert-item { padding: 10px; margin: 8px 0; border-radius: 6px; font-size: 14px; display: flex; justify-content: space-between; }
+        .alert-compra { background-color: #e6ffe6; color: #006400; }
+        body.dark-mode .alert-compra { background-color: #004d00; color: #90ee90; }
+        .alert-venta { background-color: #ffe6e6; color: #8b0000; }
+        body.dark-mode .alert-venta { background-color: #4d0000; color: #ff9999; }
+        .alert-rebote { font-weight: bold; color: #0066cc; }
+        body.dark-mode .alert-rebote { color: #66ccff; }
     </style>
 </head>
 <body>
@@ -219,7 +77,6 @@
         <div id="kaspa-value"></div>
     </div>
 
-    <!-- Histórico de alertas -->
     <div id="alert-history">
         <h2>Histórico de Alertas (últimas 10)</h2>
         <ul id="alert-list"></ul>
@@ -230,7 +87,142 @@
     <script>
         let chart;
         let currentPrice = 0;
-        let lastAlerts = JSON.parse(localStorage.getItem('kaspaAlertas') || '[]');
+
+        // Funciones auxiliares
+        function calcularSMA(precios) {
+            const suma = precios.reduce((acc, [_, precio]) => acc + precio, 0);
+            return Number((suma / precios.length).toFixed(4));
+        }
+
+        function calcularATR(precios) {
+            let diferencias = [];
+            for (let i = 1; i < precios.length; i++) {
+                diferencias.push(Math.abs(precios[i][1] - precios[i - 1][1]));
+            }
+            const sumaDiferencias = diferencias.reduce((acc, diff) => acc + diff, 0);
+            return Number((sumaDiferencias / diferencias.length).toFixed(4));
+        }
+
+        function calcularFibonacci(soporte, resistencia) {
+            const rango = resistencia - soporte;
+            return {
+                '38.2': soporte + (rango * 0.382),
+                '50': soporte + (rango * 0.5),
+                '61.8': soporte + (rango * 0.618)
+            };
+        }
+
+        function analizarTendencia(precioActual, smaCorto, smaLargo, soporte, resistencia, atr, fiboLevels) {
+            const tendenciaAlcista = smaCorto > smaLargo;
+            const tendenciaBajista = smaCorto < smaLargo;
+            const diferenciaPorcentual = ((precioActual - smaCorto) / smaCorto) * 100;
+
+            if (tendenciaAlcista && precioActual > smaCorto && diferenciaPorcentual < 5) {
+                const precioBase = soporte + atr;
+                const precioCompraSugerido = Math.min(precioBase, fiboLevels['38.2']);
+                return {
+                    recomendacion: "COMPRAR - Tendencia alcista confirmada",
+                    precioSugerido: `Precio sugerido de compra: ~$${precioCompraSugerido.toFixed(4)} (soporte + ATR o Fib 38.2%)`
+                };
+            } else if (tendenciaBajista && precioActual < smaCorto && diferenciaPorcentual > -5) {
+                const precioBase = resistencia - atr;
+                const precioVentaSugerido = Math.max(precioBase, fiboLevels['61.8']);
+                return {
+                    recomendacion: "VENDER - Tendencia bajista confirmada",
+                    precioSugerido: `Precio sugerido de venta: ~$${precioVentaSugerido.toFixed(4)} (resistencia - ATR o Fib 61.8%)`
+                };
+            } else if (diferenciaPorcentual > 10) {
+                return { recomendacion: "ESPERAR - Posible sobrecompra", precioSugerido: null };
+            } else if (diferenciaPorcentual < -10) {
+                return { recomendacion: "ESPERAR - Posible sobreventa", precioSugerido: null };
+            } else {
+                return { recomendacion: "MANTENER - Sin tendencia clara", precioSugerido: null };
+            }
+        }
+
+        function actualizarGrafico(precios, precioActual, smaCorto, smaLargo, soporte, resistencia, fiboLevels) {
+            const ctx = document.getElementById('precioChart').getContext('2d');
+            const fechas = precios.map(([timestamp]) => new Date(timestamp).toLocaleDateString('es-ES'));
+            const valores = precios.map(([_, precio]) => precio);
+
+            if (chart) chart.destroy();
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: fechas,
+                    datasets: [
+                        { label: 'Precio Kaspa', data: valores, borderColor: '#2196f3', fill: false },
+                        { label: 'SMA 5 días', data: Array(valores.length - 5).fill(null).concat(Array(5).fill(smaCorto)), borderColor: '#4caf50', borderDash: [5, 5], fill: false },
+                        { label: 'SMA 14 días', data: Array(valores.length).fill(smaLargo), borderColor: '#ff9800', borderDash: [5, 5], fill: false },
+                        { label: 'Soporte', data: Array(valores.length).fill(soporte), borderColor: '#f44336', borderDash: [2, 2], fill: false },
+                        { label: 'Resistencia', data: Array(valores.length).fill(resistencia), borderColor: '#f44336', borderDash: [2, 2], fill: false },
+                        { label: 'Fib 38.2%', data: Array(valores.length).fill(fiboLevels['38.2']), borderColor: '#9c27b0', borderDash: [3, 3], fill: false },
+                        { label: 'Fib 61.8%', data: Array(valores.length).fill(fiboLevels['61.8']), borderColor: '#9c27b0', borderDash: [3, 3], fill: false }
+                    ]
+                },
+                options: {
+                    scales: {
+                        y: { beginAtZero: false, title: { display: true, text: 'Precio (USD)' } },
+                        x: { title: { display: true, text: 'Fecha' } }
+                    }
+                }
+            });
+        }
+
+        // Histórico de alertas
+        function guardarAlerta(tipo, precio) {
+            const fecha = new Date().toLocaleString('es-ES', { timeZone: 'America/Argentina/Buenos_Aires' });
+            let historico = JSON.parse(localStorage.getItem('kaspaAlertas') || '[]');
+
+            const nuevaAlerta = {
+                fecha,
+                tipo,
+                precio: precio.toFixed(6),
+                maxRebote: precio.toFixed(6), // Siempre inicia con el precio de la alerta
+                timestamp: Date.now()
+            };
+
+            historico.unshift(nuevaAlerta);
+            if (historico.length > 50) historico.pop();
+            localStorage.setItem('kaspaAlertas', JSON.stringify(historico));
+            actualizarHistorico();
+        }
+
+        function actualizarHistorico() {
+            const historico = JSON.parse(localStorage.getItem('kaspaAlertas') || '[]');
+            const alertList = document.getElementById('alert-list');
+            alertList.innerHTML = '';
+
+            historico.slice(0, 10).forEach(item => {
+                const li = document.createElement('li');
+                li.className = `alert-item alert-${item.tipo.toLowerCase()}`;
+                const reboteText = item.maxRebote === item.precio 
+                    ? `→ Rebote máx: Pendiente (actual: $${item.maxRebote})` 
+                    : `→ Rebote máx: $${item.maxRebote}`;
+                li.innerHTML = `${item.fecha} - <strong>${item.tipo}</strong> - Precio: $${item.precio} ${reboteText}`;
+                alertList.appendChild(li);
+            });
+        }
+
+        function actualizarMaxRebote() {
+            let historico = JSON.parse(localStorage.getItem('kaspaAlertas') || '[]');
+            let changed = false;
+
+            historico = historico.map(item => {
+                const horasPasadas = (Date.now() - item.timestamp) / (1000 * 60 * 60);
+                if (horasPasadas <= 24 && currentPrice > parseFloat(item.maxRebote)) {
+                    changed = true;
+                    return { ...item, maxRebote: currentPrice.toFixed(6) };
+                }
+                return item;
+            });
+
+            if (changed) {
+                localStorage.setItem('kaspaAlertas', JSON.stringify(historico));
+                actualizarHistorico();
+            }
+        }
 
         async function analizarKaspa() {
             const resultadosDiv = document.getElementById('resultados');
@@ -271,8 +263,8 @@
 
                 resultadosDiv.innerHTML = `
                     <div class="dato precio">Precio actual: $${currentPrice.toFixed(6)}</div>
-                    <div class="dato sma">SMA 5 días: $${smaCorto.toFixed(4)}</div>
-                    <div class="dato sma">SMA 14 días: $${smaLargo.toFixed(4)}</div>
+                    <div class="dato sma">SMA 5 días: $${smaCorto}</div>
+                    <div class="dato sma">SMA 14 días: $${smaLargo}</div>
                     <div class="dato tecnico">Soporte: $${soporte.toFixed(4)}</div>
                     <div class="dato tecnico">Resistencia: $${resistencia.toFixed(4)}</div>
                     <div class="dato tecnico">ATR (aprox.): $${atr.toFixed(4)}</div>
@@ -286,38 +278,21 @@
 
                 actualizarGrafico(precios, currentPrice, smaCorto, smaLargo, soporte, resistencia, fiboLevels);
 
-                // Registrar alerta si es COMPRA o VENTA
                 if (recomendacion.startsWith("COMPRAR") || recomendacion.startsWith("VENDER")) {
                     const tipo = recomendacion.startsWith("COMPRAR") ? "COMPRA" : "VENTA";
                     const fecha = new Date().toLocaleString('es-ES', { timeZone: 'America/Argentina/Buenos_Aires' });
                     const precio = currentPrice.toFixed(6);
 
-                    // Guardar en localStorage
-                    const nuevaAlerta = {
-                        fecha,
-                        tipo,
-                        precio,
-                        maxRebote: precio, // Inicialmente el mismo precio
-                        timestamp: Date.now()
-                    };
+                    guardarAlerta(tipo, precio);
 
-                    let historico = JSON.parse(localStorage.getItem('kaspaAlertas') || '[]');
-                    historico.unshift(nuevaAlerta);
-
-                    // Limitar a 50 entradas
-                    if (historico.length > 50) historico.pop();
-                    localStorage.setItem('kaspaAlertas', JSON.stringify(historico));
-
-                    // Mostrar alerta sonora y visual
                     alert(`¡Alerta ${tipo}! Precio: $${precio}`);
                     alertSound.play().catch(err => console.log("Error al reproducir sonido:", err));
-
-                    // Actualizar el histórico en pantalla (solo últimas 10)
-                    actualizarHistorico();
                 }
 
                 const ahora = new Date().toLocaleString('es-ES');
                 ultimaActualizacionDiv.textContent = `Última actualización: ${ahora}`;
+
+                actualizarMaxRebote();
 
             } catch (error) {
                 resultadosDiv.innerHTML = `<div class="recomendacion vender">Error: ${error.message}</div>`;
@@ -326,77 +301,31 @@
             }
         }
 
-        // Función para actualizar el histórico (solo últimas 10)
-        function actualizarHistorico() {
-            const historico = JSON.parse(localStorage.getItem('kaspaAlertas') || '[]');
-            const alertList = document.getElementById('alert-list');
-            alertList.innerHTML = '';
-
-            // Mostrar solo las últimas 10
-            historico.slice(0, 10).forEach(alerta => {
-                const li = document.createElement('li');
-                li.className = `alert-item alert-${alerta.tipo.toLowerCase()}`;
-                const reboteText = alerta.maxRebote !== alerta.precio 
-                    ? `<span class="alert-rebote"> → Rebote máx: $${alerta.maxRebote}</span>` 
-                    : '';
-                li.innerHTML = `${alerta.fecha} - <strong>${alerta.tipo}</strong> - Precio: $${alerta.precio}${reboteText}`;
-                alertList.appendChild(li);
-            });
-        }
-
-        // Actualizar máximo rebote cada vez que se carga el análisis
-        function actualizarMaxRebote() {
-            let historico = JSON.parse(localStorage.getItem('kaspaAlertas') || '[]');
-            let changed = false;
-
-            historico = historico.map(alerta => {
-                const horasPasadas = (Date.now() - alerta.timestamp) / (1000 * 60 * 60);
-                if (horasPasadas <= 24 && currentPrice > alerta.maxRebote) {
-                    changed = true;
-                    return { ...alerta, maxRebote: currentPrice.toFixed(6) };
-                }
-                return alerta;
-            });
-
-            if (changed) {
-                localStorage.setItem('kaspaAlertas', JSON.stringify(historico));
-                actualizarHistorico();
-            }
-        }
-
         window.onload = () => {
             analizarKaspa();
             actualizarHistorico();
         };
 
-        setInterval(() => {
-            analizarKaspa();
-            actualizarMaxRebote();
-        }, 300000); // Actualiza cada 5 minutos
+        setInterval(analizarKaspa, 300000);
 
-        // Script para el botón de tema
-        const themeToggle = document.getElementById('theme-toggle');
-        themeToggle.addEventListener('click', () => {
+        // Tema
+        document.getElementById('theme-toggle').addEventListener('click', () => {
             document.body.classList.toggle('dark-mode');
-            themeToggle.textContent = document.body.classList.contains('dark-mode') ? 'Modo Claro' : 'Modo Oscuro';
+            document.getElementById('theme-toggle').textContent = document.body.classList.contains('dark-mode') ? 'Modo Claro' : 'Modo Oscuro';
         });
 
-        // Script para el cálculo de Kaspa
-        const kaspaInput = document.getElementById('kaspa-input');
-        const calculateButton = document.getElementById('calculate-button');
-        const kaspaValue = document.getElementById('kaspa-value');
-
-        calculateButton.addEventListener('click', () => {
-            const amount = parseFloat(kaspaInput.value);
+        // Calculadora
+        document.getElementById('calculate-button').addEventListener('click', () => {
+            const amount = parseFloat(document.getElementById('kaspa-input').value);
             if (isNaN(amount) || amount <= 0) {
-                kaspaValue.textContent = 'Por favor, ingresa una cantidad válida de Kaspa.';
+                document.getElementById('kaspa-value').textContent = 'Por favor, ingresa una cantidad válida de Kaspa.';
                 return;
             }
             const valueInUSD = amount * currentPrice;
-            kaspaValue.textContent = `Valor en USD: $${valueInUSD.toFixed(4)}`;
+            document.getElementById('kaspa-value').textContent = `Valor en USD: $${valueInUSD.toFixed(4)}`;
         });
     </script>
 
-    <!-- Versión: alpha . 0001 -->
+    <!-- Versión: alpha . 0003 -->
 </body>
 </html>
