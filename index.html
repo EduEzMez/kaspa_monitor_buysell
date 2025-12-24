@@ -12,11 +12,11 @@
             max-width: 800px;
             margin: 20px auto;
             padding: 20px;
-            background-color: #f0f0f0; /* Modo claro por defecto */
+            background-color: #f0f0f0;
             transition: background-color 0.3s;
         }
         body.dark-mode {
-            background-color: #1e1e1e; /* Modo oscuro */
+            background-color: #1e1e1e;
             color: #e0e0e0;
         }
         .container {
@@ -29,11 +29,11 @@
             background-color: #2e2e2e;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
         }
-        h1 {
+        h1, h2 {
             color: #333;
             text-align: center;
         }
-        body.dark-mode h1 {
+        body.dark-mode h1, body.dark-mode h2 {
             color: #ffffff;
         }
         #resultados {
@@ -86,29 +86,6 @@
         }
         #chart-container {
             margin-top: 20px;
-        }
-        /* Estilo para el botón flotante de copiar */
-        #copy-button {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 10px 20px;
-            background-color: #4caf50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            z-index: 1000;
-        }
-        #copy-button:hover {
-            background-color: #45a049;
-        }
-        body.dark-mode #copy-button {
-            background-color: #45a049;
-        }
-        body.dark-mode #copy-button:hover {
-            background-color: #3d8b40;
         }
         /* Estilo para el botón de tema */
         #theme-toggle {
@@ -174,6 +151,54 @@
         body.dark-mode #kaspa-value {
             color: #e0e0e0;
         }
+        /* Estilo para el histórico de alertas */
+        #alert-history {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        body.dark-mode #alert-history {
+            background-color: #2e2e2e;
+        }
+        #alert-list {
+            list-style: none;
+            padding: 0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .alert-item {
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 6px;
+            font-size: 14px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .alert-compra {
+            background-color: #e6ffe6;
+            color: #006400;
+        }
+        body.dark-mode .alert-compra {
+            background-color: #004d00;
+            color: #90ee90;
+        }
+        .alert-venta {
+            background-color: #ffe6e6;
+            color: #8b0000;
+        }
+        body.dark-mode .alert-venta {
+            background-color: #4d0000;
+            color: #ff9999;
+        }
+        .alert-rebote {
+            font-weight: bold;
+            color: #0066cc;
+        }
+        body.dark-mode .alert-rebote {
+            color: #66ccff;
+        }
     </style>
 </head>
 <body>
@@ -194,20 +219,25 @@
         <div id="kaspa-value"></div>
     </div>
 
-    <button id="copy-button">Copiar Datos</button>
+    <!-- Histórico de alertas -->
+    <div id="alert-history">
+        <h2>Histórico de Alertas (últimas 10)</h2>
+        <ul id="alert-list"></ul>
+    </div>
+
     <button id="theme-toggle">Modo Oscuro</button>
 
     <script>
-        let chart; // Variable global para el gráfico
-        let currentPrice = 0; // Variable para almacenar el precio actual de Kaspa
+        let chart;
+        let currentPrice = 0;
+        let lastAlerts = JSON.parse(localStorage.getItem('kaspaAlertas') || '[]');
 
         async function analizarKaspa() {
             const resultadosDiv = document.getElementById('resultados');
             const loadingDiv = document.getElementById('loading');
             const ultimaActualizacionDiv = document.getElementById('ultima-actualizacion');
             const alertSound = document.getElementById('alertSound');
-            const copyButton = document.getElementById('copy-button');
-            
+
             loadingDiv.style.display = 'block';
             resultadosDiv.innerHTML = '';
 
@@ -222,7 +252,7 @@
                 const precioActual = await precioActualResponse.json();
                 const datosHistoricos = await datosHistoricosResponse.json();
 
-                currentPrice = precioActual.kaspa.usd; // Guardar el precio actual
+                currentPrice = precioActual.kaspa.usd;
                 const precios = datosHistoricos.prices;
 
                 const smaCorto = calcularSMA(precios.slice(-5));
@@ -240,9 +270,9 @@
                 );
 
                 resultadosDiv.innerHTML = `
-                    <div class="dato precio">Precio actual: $${currentPrice}</div>
-                    <div class="dato sma">SMA 5 días: $${smaCorto}</div>
-                    <div class="dato sma">SMA 14 días: $${smaLargo}</div>
+                    <div class="dato precio">Precio actual: $${currentPrice.toFixed(6)}</div>
+                    <div class="dato sma">SMA 5 días: $${smaCorto.toFixed(4)}</div>
+                    <div class="dato sma">SMA 14 días: $${smaLargo.toFixed(4)}</div>
                     <div class="dato tecnico">Soporte: $${soporte.toFixed(4)}</div>
                     <div class="dato tecnico">Resistencia: $${resistencia.toFixed(4)}</div>
                     <div class="dato tecnico">ATR (aprox.): $${atr.toFixed(4)}</div>
@@ -256,31 +286,38 @@
 
                 actualizarGrafico(precios, currentPrice, smaCorto, smaLargo, soporte, resistencia, fiboLevels);
 
+                // Registrar alerta si es COMPRA o VENTA
                 if (recomendacion.startsWith("COMPRAR") || recomendacion.startsWith("VENDER")) {
-                    alert(`¡Alerta! ${recomendacion}`);
+                    const tipo = recomendacion.startsWith("COMPRAR") ? "COMPRA" : "VENTA";
+                    const fecha = new Date().toLocaleString('es-ES', { timeZone: 'America/Argentina/Buenos_Aires' });
+                    const precio = currentPrice.toFixed(6);
+
+                    // Guardar en localStorage
+                    const nuevaAlerta = {
+                        fecha,
+                        tipo,
+                        precio,
+                        maxRebote: precio, // Inicialmente el mismo precio
+                        timestamp: Date.now()
+                    };
+
+                    let historico = JSON.parse(localStorage.getItem('kaspaAlertas') || '[]');
+                    historico.unshift(nuevaAlerta);
+
+                    // Limitar a 50 entradas
+                    if (historico.length > 50) historico.pop();
+                    localStorage.setItem('kaspaAlertas', JSON.stringify(historico));
+
+                    // Mostrar alerta sonora y visual
+                    alert(`¡Alerta ${tipo}! Precio: $${precio}`);
                     alertSound.play().catch(err => console.log("Error al reproducir sonido:", err));
+
+                    // Actualizar el histórico en pantalla (solo últimas 10)
+                    actualizarHistorico();
                 }
 
-                const ahora = new Date().toLocaleString('es-ES', { timeZone: 'America/Argentina/Buenos_Aires' }).replace(/,/, '');
+                const ahora = new Date().toLocaleString('es-ES');
                 ultimaActualizacionDiv.textContent = `Última actualización: ${ahora}`;
-
-                // Datos específicos para el botón de copiar con fecha y hora actualizadas
-                const textoCopiarBase = `
-Análisis de Kaspa
-Precio actual: $0.095353
-SMA 5 días: $0.0941
-SMA 14 días: $0.0871
-Soporte: $0.0754
-Resistencia: $0.0954
-ATR (aprox.): $0.0024
-Fibonacci 38.2%: $0.0830
-Fibonacci 61.8%: $0.0877
-COMPRAR - Tendencia alcista confirmada
-Precio sugerido de compra: ~$0.0778 (soporte + ATR o Fib 38.2%)
-Última actualización: `;
-                const ahoraCopiar = new Date().toLocaleString('es-ES', { timeZone: 'America/Argentina/Buenos_Aires' }).replace(/,/, '');
-                const textoCopiar = textoCopiarBase + ahoraCopiar;
-                copyButton.setAttribute('data-clipboard-text', textoCopiar);
 
             } catch (error) {
                 resultadosDiv.innerHTML = `<div class="recomendacion vender">Error: ${error.message}</div>`;
@@ -289,172 +326,53 @@ Precio sugerido de compra: ~$0.0778 (soporte + ATR o Fib 38.2%)
             }
         }
 
-        function calcularSMA(precios) {
-            const suma = precios.reduce((acc, [_, precio]) => acc + precio, 0);
-            return Number((suma / precios.length).toFixed(4));
-        }
+        // Función para actualizar el histórico (solo últimas 10)
+        function actualizarHistorico() {
+            const historico = JSON.parse(localStorage.getItem('kaspaAlertas') || '[]');
+            const alertList = document.getElementById('alert-list');
+            alertList.innerHTML = '';
 
-        function calcularATR(precios) {
-            let diferencias = [];
-            for (let i = 1; i < precios.length; i++) {
-                diferencias.push(Math.abs(precios[i][1] - precios[i - 1][1]));
-            }
-            const sumaDiferencias = diferencias.reduce((acc, diff) => acc + diff, 0);
-            return Number((sumaDiferencias / diferencias.length).toFixed(4));
-        }
-
-        function calcularFibonacci(soporte, resistencia) {
-            const rango = resistencia - soporte;
-            return {
-                '38.2': soporte + (rango * 0.382),
-                '50': soporte + (rango * 0.5),
-                '61.8': soporte + (rango * 0.618)
-            };
-        }
-
-        function analizarTendencia(precioActual, smaCorto, smaLargo, soporte, resistencia, atr, fiboLevels) {
-            const tendenciaAlcista = smaCorto > smaLargo;
-            const tendenciaBajista = smaCorto < smaLargo;
-            const diferenciaPorcentual = ((precioActual - smaCorto) / smaCorto) * 100;
-
-            if (tendenciaAlcista && precioActual > smaCorto && diferenciaPorcentual < 5) {
-                const precioBase = soporte + atr;
-                const precioCompraSugerido = Math.min(precioBase, fiboLevels['38.2']);
-                return {
-                    recomendacion: "COMPRAR - Tendencia alcista confirmada",
-                    precioSugerido: `Precio sugerido de compra: ~$${precioCompraSugerido.toFixed(4)} (soporte + ATR o Fib 38.2%)`
-                };
-            } else if (tendenciaBajista && precioActual < smaCorto && diferenciaPorcentual > -5) {
-                const precioBase = resistencia - atr;
-                const precioVentaSugerido = Math.max(precioBase, fiboLevels['61.8']);
-                return {
-                    recomendacion: "VENDER - Tendencia bajista confirmada",
-                    precioSugerido: `Precio sugerido de venta: ~$${precioVentaSugerido.toFixed(4)} (resistencia - ATR o Fib 61.8%)`
-                };
-            } else if (diferenciaPorcentual > 10) {
-                return {
-                    recomendacion: "ESPERAR - Posible sobrecompra",
-                    precioSugerido: null
-                };
-            } else if (diferenciaPorcentual < -10) {
-                return {
-                    recomendacion: "ESPERAR - Posible sobreventa",
-                    precioSugerido: null
-                };
-            } else {
-                return {
-                    recomendacion: "MANTENER - Sin tendencia clara",
-                    precioSugerido: null
-                };
-            }
-        }
-
-        function actualizarGrafico(precios, precioActual, smaCorto, smaLargo, soporte, resistencia, fiboLevels) {
-            const ctx = document.getElementById('precioChart').getContext('2d');
-            const fechas = precios.map(([timestamp]) => new Date(timestamp).toLocaleDateString('es-ES'));
-            const valores = precios.map(([_, precio]) => precio);
-
-            if (chart) chart.destroy();
-
-            chart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: fechas,
-                    datasets: [
-                        {
-                            label: 'Precio Kaspa',
-                            data: valores,
-                            borderColor: '#2196f3',
-                            fill: false
-                        },
-                        {
-                            label: 'SMA 5 días',
-                            data: Array(valores.length - 5).fill(null).concat(Array(5).fill(smaCorto)),
-                            borderColor: '#4caf50',
-                            borderDash: [5, 5],
-                            fill: false
-                        },
-                        {
-                            label: 'SMA 14 días',
-                            data: Array(valores.length).fill(smaLargo),
-                            borderColor: '#ff9800',
-                            borderDash: [5, 5],
-                            fill: false
-                        },
-                        {
-                            label: 'Soporte',
-                            data: Array(valores.length).fill(soporte),
-                            borderColor: '#f44336',
-                            borderDash: [2, 2],
-                            fill: false
-                        },
-                        {
-                            label: 'Resistencia',
-                            data: Array(valores.length).fill(resistencia),
-                            borderColor: '#f44336',
-                            borderDash: [2, 2],
-                            fill: false
-                        },
-                        {
-                            label: 'Fib 38.2%',
-                            data: Array(valores.length).fill(fiboLevels['38.2']),
-                            borderColor: '#9c27b0',
-                            borderDash: [3, 3],
-                            fill: false
-                        },
-                        {
-                            label: 'Fib 61.8%',
-                            data: Array(valores.length).fill(fiboLevels['61.8']),
-                            borderColor: '#9c27b0',
-                            borderDash: [3, 3],
-                            fill: false
-                        }
-                    ]
-                },
-                options: {
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            title: { display: true, text: 'Precio (USD)' }
-                        },
-                        x: {
-                            title: { display: true, text: 'Fecha' }
-                        }
-                    }
-                }
+            // Mostrar solo las últimas 10
+            historico.slice(0, 10).forEach(alerta => {
+                const li = document.createElement('li');
+                li.className = `alert-item alert-${alerta.tipo.toLowerCase()}`;
+                const reboteText = alerta.maxRebote !== alerta.precio 
+                    ? `<span class="alert-rebote"> → Rebote máx: $${alerta.maxRebote}</span>` 
+                    : '';
+                li.innerHTML = `${alerta.fecha} - <strong>${alerta.tipo}</strong> - Precio: $${alerta.precio}${reboteText}`;
+                alertList.appendChild(li);
             });
         }
 
-        window.onload = analizarKaspa;
-        setInterval(analizarKaspa, 300000); // Actualiza cada 5 minutos
+        // Actualizar máximo rebote cada vez que se carga el análisis
+        function actualizarMaxRebote() {
+            let historico = JSON.parse(localStorage.getItem('kaspaAlertas') || '[]');
+            let changed = false;
 
-        // Script para el botón de copiar
-        const copyButton = document.getElementById('copy-button');
-        copyButton.addEventListener('click', () => {
-            const textoCopiarBase = `
-Análisis de Kaspa
-Precio actual: $0.095353
-SMA 5 días: $0.0941
-SMA 14 días: $0.0871
-Soporte: $0.0754
-Resistencia: $0.0954
-ATR (aprox.): $0.0024
-Fibonacci 38.2%: $0.0830
-Fibonacci 61.8%: $0.0877
-COMPRAR - Tendencia alcista confirmada
-Precio sugerido de compra: ~$0.0778 (soporte + ATR o Fib 38.2%)
-Última actualización: `;
-            const ahoraCopiar = new Date().toLocaleString('es-ES', { timeZone: 'America/Argentina/Buenos_Aires' }).replace(/,/, '');
-            const textoCopiar = textoCopiarBase + ahoraCopiar;
-            if (textoCopiar) {
-                navigator.clipboard.writeText(textoCopiar).then(() => {
-                    alert('Datos copiados al portapapeles!');
-                }).catch(err => {
-                    console.error('Error al copiar: ', err);
-                    alert('Error al copiar los datos.');
-                });
+            historico = historico.map(alerta => {
+                const horasPasadas = (Date.now() - alerta.timestamp) / (1000 * 60 * 60);
+                if (horasPasadas <= 24 && currentPrice > alerta.maxRebote) {
+                    changed = true;
+                    return { ...alerta, maxRebote: currentPrice.toFixed(6) };
+                }
+                return alerta;
+            });
+
+            if (changed) {
+                localStorage.setItem('kaspaAlertas', JSON.stringify(historico));
+                actualizarHistorico();
             }
-        });
+        }
+
+        window.onload = () => {
+            analizarKaspa();
+            actualizarHistorico();
+        };
+
+        setInterval(() => {
+            analizarKaspa();
+            actualizarMaxRebote();
+        }, 300000); // Actualiza cada 5 minutos
 
         // Script para el botón de tema
         const themeToggle = document.getElementById('theme-toggle');
@@ -478,5 +396,7 @@ Precio sugerido de compra: ~$0.0778 (soporte + ATR o Fib 38.2%)
             kaspaValue.textContent = `Valor en USD: $${valueInUSD.toFixed(4)}`;
         });
     </script>
+
+    <!-- Versión: alpha . 0001 -->
 </body>
 </html>
