@@ -54,14 +54,15 @@
         .sugerencia { font-style: italic; margin-top: 5px; color: #555; }
         body.dark-mode .sugerencia { color: #c0c0c0; }
         #chart-container { margin-top: 20px; }
-        /* Controles superiores derechos con íconos */
-        .top-controls {
+        /* Controles superiores derechos FIJOS y sin filtro */
+        #top-controls-wrapper {
             position: fixed;
             top: 15px;
             right: 15px;
             display: flex;
             gap: 12px;
-            z-index: 1002;
+            z-index: 9999; /* Muy alto para estar siempre encima */
+            pointer-events: none; /* Evita que el wrapper interfiera */
         }
         .control-btn {
             width: 44px;
@@ -70,13 +71,14 @@
             background-color: #666;
             color: white;
             border: none;
-            font-size: 20px;
+            font-size: 22px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
             transition: all 0.3s ease;
+            pointer-events: auto; /* Solo los botones responden al clic */
         }
         .control-btn:hover {
             background-color: #555;
@@ -118,7 +120,8 @@
     </style>
 </head>
 <body>
-    <div class="top-controls">
+    <!-- Controles superiores derechos FIJOS -->
+    <div id="top-controls-wrapper">
         <!-- Botón Sonido -->
         <button id="toggle-sound" class="control-btn" title="Sonido de alerta: ON">♪</button>
         <!-- Botón Modo Oscuro -->
@@ -153,14 +156,14 @@
         <p id="asesor-recomendacion">Esperando análisis...</p>
     </div>
 
-    <p id="version">Versión: alpha . 0016</p>
+    <p id="version">Versión: alpha . 0017</p>
 
     <script>
         let chart;
         let currentPrice = 0;
         let soundEnabled = true;
 
-        // Funciones auxiliares (sin cambios, solo las esenciales)
+        // Funciones auxiliares (sin cambios)
         function calcularSMA(precios) {
             const suma = precios.reduce((acc, [_, precio]) => acc + precio, 0);
             return Number((suma / precios.length).toFixed(4));
@@ -432,6 +435,6 @@
         setInterval(analizarKaspa, 300000);
     </script>
 
-    <!-- Versión: alpha . 0016 -->
+    <!-- Versión: alpha . 0017 -->
 </body>
 </html>
