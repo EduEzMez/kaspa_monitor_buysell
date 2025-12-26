@@ -95,39 +95,23 @@
         body.dark-mode .control-btn:hover {
             background-color: #999;
         }
-        /* Botón flotante Copiar datos - color acorde al sitio */
+        /* Botón Copiar datos (integrado en el menú superior) */
         #copy-data-btn {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            padding: 12px 24px;
-            background-color: #2196f3; /* Azul principal del sitio (como el precio) */
-            color: white;
-            border: none;
-            border-radius: 50px;
-            font-weight: bold;
-            cursor: pointer;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-            z-index: 9998;
-            transition: all 0.3s ease;
+            background-color: #2196f3; /* Azul principal */
         }
         body.dark-mode #copy-data-btn {
-            background-color: #1565c0; /* Azul más oscuro para modo oscuro */
+            background-color: #1565c0; /* Azul oscuro para modo oscuro */
         }
         #copy-data-btn:hover {
             background-color: #1976d2;
-            transform: scale(1.08);
         }
         body.dark-mode #copy-data-btn:hover {
             background-color: #1e88e5;
         }
-        #copy-data-btn:active {
-            transform: scale(0.95);
-        }
         /* Notificación temporal */
         #copy-toast {
             position: fixed;
-            bottom: 80px;
+            bottom: 30px;
             right: 30px;
             background-color: #4caf50;
             color: white;
@@ -196,11 +180,9 @@
     <!-- Controles superiores derechos - FIJOS -->
     <div id="top-controls-wrapper">
         <button id="toggle-sound" class="control-btn" title="Sonido de alerta: ON">♪</button>
+        <button id="copy-data-btn" class="control-btn" title="Copiar datos">📄</button>
         <button id="theme-toggle" class="control-btn" title="Modo Oscuro">💡</button>
     </div>
-
-    <!-- Botón flotante Copiar datos -->
-    <button id="copy-data-btn">Copiar datos</button>
 
     <!-- Notificación temporal -->
     <div id="copy-toast">¡Datos copiados al portapapeles!</div>
@@ -241,9 +223,9 @@
         let soundEnabled = true;
         let lastRecommendation = "";
 
-        // ... (todas las funciones auxiliares, analizarKaspa, guardarAlerta, eliminarAlerta, actualizarHistorico, actualizarMaxRebote, mostrarSugerenciaAsesor se mantienen iguales al código anterior)
+        // ... (todas las funciones anteriores se mantienen iguales: calcularSMA, calcularATR, calcularFibonacci, analizarTendencia, actualizarGrafico, guardarAlerta, eliminarAlerta, actualizarHistorico, actualizarMaxRebote, analizarKaspa, mostrarSugerenciaAsesor)
 
-        // Copiar datos al portapapeles (con formato exacto)
+        // Copiar datos al portapapeles
         document.getElementById('copy-data-btn').addEventListener('click', () => {
             const datos = document.querySelectorAll('.dato');
             let texto = "Análisis de Kaspa\n\n";
@@ -255,12 +237,10 @@
                 }
             });
 
-            // Recomendación completa
             if (lastRecommendation) {
                 texto += "\n" + lastRecommendation + "\n";
             }
 
-            // Última actualización
             const ultima = document.getElementById('ultima-actualizacion').textContent.trim();
             texto += "\n" + ultima;
 
@@ -272,7 +252,7 @@
                 }, 2000);
             }).catch(err => {
                 console.error('Error al copiar:', err);
-                alert('No se pudo copiar. Copia manualmente el texto.');
+                alert('No se pudo copiar automáticamente. Copia manualmente.');
             });
         });
 
