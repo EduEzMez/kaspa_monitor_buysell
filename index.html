@@ -7,7 +7,53 @@
     <link rel="icon" type="image/png" href="https://i0.wp.com/kaspa.org/wp-content/uploads/2023/06/Kaspa-Icon-16.png?resize=16%2C16&ssl=1">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* ... (el CSS completo se mantiene igual al anterior, no hay cambios aquí) */
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px 10px;
+            background-color: #f0f0f0;
+            transition: all 0.3s ease;
+            color: #333;
+        }
+        body.dark-mode {
+            background-color: #1e1e1e;
+            color: #e0e0e0;
+            filter: grayscale(100%);
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        body.dark-mode .container {
+            background-color: #2e2e2e;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.6);
+        }
+        h1, h2 { color: #333; text-align: center; }
+        body.dark-mode h1, body.dark-mode h2 { color: #ffffff; }
+        #resultados { margin-top: 20px; }
+        .dato { margin: 10px 0; padding: 10px; border-radius: 5px; }
+        .precio { background-color: #e3f2fd; }
+        .sma { background-color: #f1f8e9; }
+        .tecnico { background-color: #fff3e0; }
+        body.dark-mode .precio { background-color: #3a4a5a; }
+        body.dark-mode .sma { background-color: #4a5a3a; }
+        body.dark-mode .tecnico { background-color: #5a4a3a; }
+        .recomendacion { font-weight: bold; padding: 15px; text-align: center; border-radius: 5px; }
+        .comprar { background-color: #4caf50; color: white; }
+        .vender { background-color: #f44336; color: white; }
+        .esperar { background-color: #ff9800; color: white; }
+        .mantener { background-color: #9e9e9e; color: white; }
+        body.dark-mode .mantener { background-color: #666666; color: #e0e0e0; }
+        #loading { text-align: center; color: #666; }
+        body.dark-mode #loading { color: #b0b0b0; }
+        #ultima-actualizacion { text-align: center; font-size: 12px; color: #666; margin-top: 10px; }
+        body.dark-mode #ultima-actualizacion { color: #b0b0b0; }
+        .sugerencia { font-style: italic; margin-top: 5px; color: #555; }
+        body.dark-mode .sugerencia { color: #c0c0c0; }
+        #chart-container { margin-top: 20px; }
         #top-controls-wrapper {
             position: fixed !important;
             top: 15px !important;
@@ -55,18 +101,56 @@
             transition: opacity 0.4s ease;
             font-weight: bold;
         }
-        /* Resto del CSS sin cambios */
+        #kaspa-calculator { margin-top: 20px; padding: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        body.dark-mode #kaspa-calculator { background-color: #2e2e2e; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
+        #kaspa-input { padding: 5px; width: 150px; margin-right: 10px; }
+        #calculate-button { padding: 5px 10px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        #calculate-button:hover { background-color: #45a049; }
+        body.dark-mode #calculate-button { background-color: #45a049; }
+        body.dark-mode #calculate-button:hover { background-color: #3d8b40; }
+        #kaspa-value { margin-top: 10px; font-weight: bold; color: #333; }
+        body.dark-mode #kaspa-value { color: #e0e0e0; }
+        #alert-history { margin-top: 30px; padding: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        body.dark-mode #alert-history { background-color: #2e2e2e; }
+        #alert-list { list-style: none; padding: 0; max-height: 400px; overflow-y: auto; }
+        .alert-item { padding: 10px; margin: 8px 0; border-radius: 6px; font-size: 14px; position: relative; }
+        .alert-delete {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            color: #f44336;
+            font-size: 18px;
+            cursor: pointer;
+            font-weight: bold;
+            background: rgba(255,255,255,0.8);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+        }
+        body.dark-mode .alert-delete { background: rgba(0,0,0,0.7); color: #ff9999; }
+        .alert-delete:hover { color: #d32f2f; }
+        .alert-compra { background-color: #e6ffe6; color: #006400; }
+        body.dark-mode .alert-compra { background-color: #004d00; color: #90ee90; }
+        .alert-venta { background-color: #ffe6e6; color: #8b0000; }
+        body.dark-mode .alert-venta { background-color: #4d0000; color: #ff9999; }
+        .alert-rebote { font-weight: bold; color: #0066cc; }
+        body.dark-mode .alert-rebote { color: #66ccff; }
+        #asesor-section { margin-top: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        body.dark-mode #asesor-section { background-color: #2e2e2e; color: #e0e0e0; }
+        #asesor-recomendacion { font-size: 16px; line-height: 1.5; }
+        #version { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
+        body.dark-mode #version { color: #aaa; }
     </style>
 </head>
 <body>
-    <!-- Controles superiores derechos - FIJOS -->
     <div id="top-controls-wrapper">
         <button id="toggle-sound" class="control-btn" title="Sonido de alerta: ON">♪</button>
         <button id="copy-data-btn" class="control-btn" title="Copiar datos">📄</button>
         <button id="theme-toggle" class="control-btn" title="Modo Oscuro">💡</button>
     </div>
 
-    <!-- Notificación temporal -->
     <div id="copy-toast">¡Datos copiados al portapapeles!</div>
 
     <div class="container">
@@ -97,67 +181,303 @@
         <p id="asesor-recomendacion">Esperando análisis...</p>
     </div>
 
-    <p id="version">Versión: alpha . 0020</p>
+    <p id="version">Versión: alpha . 0021</p>
 
     <script>
         let chart;
         let currentPrice = 0;
         let soundEnabled = true;
 
-        // ... (todas las funciones anteriores: calcularSMA, calcularATR, calcularFibonacci, analizarTendencia, actualizarGrafico, guardarAlerta, eliminarAlerta, actualizarHistorico, actualizarMaxRebote, mostrarSugerenciaAsesor se mantienen iguales)
-
-        // Función principal (analizarKaspa) – sin cambios, solo asegúrate de que esté definida antes del onload
-        async function analizarKaspa() {
-            // ... (todo el código de analizarKaspa que ya tenías, sin cambios)
-            // Asegúrate de que esta función esté completa como en versiones anteriores
+        function calcularSMA(precios) {
+            const suma = precios.reduce((acc, [_, precio]) => acc + precio, 0);
+            return Number((suma / precios.length).toFixed(4));
         }
 
-        // Copiar datos – AHORA SÍ TOMA TODO DEL DOM EN TIEMPO REAL
+        function calcularATR(precios) {
+            let diferencias = [];
+            for (let i = 1; i < precios.length; i++) {
+                diferencias.push(Math.abs(precios[i][1] - precios[i - 1][1]));
+            }
+            const sumaDiferencias = diferencias.reduce((acc, diff) => acc + diff, 0);
+            return Number((sumaDiferencias / diferencias.length).toFixed(4));
+        }
+
+        function calcularFibonacci(soporte, resistencia) {
+            const rango = resistencia - soporte;
+            return {
+                '38.2': soporte + (rango * 0.382),
+                '61.8': soporte + (rango * 0.618)
+            };
+        }
+
+        function analizarTendencia(precioActual, smaCorto, smaLargo, soporte, resistencia, atr, fiboLevels) {
+            const tendenciaAlcista = smaCorto > smaLargo;
+            const tendenciaBajista = smaCorto < smaLargo;
+            const diferenciaPorcentual = ((precioActual - smaCorto) / smaCorto) * 100;
+
+            let recomendacion = "";
+            let precioSugerido = null;
+
+            if (tendenciaAlcista && precioActual > smaCorto && diferenciaPorcentual < 5) {
+                const precioBase = soporte + atr;
+                const precioCompraSugerido = Math.min(precioBase, fiboLevels['38.2']);
+                recomendacion = "COMPRAR - Tendencia alcista confirmada";
+                precioSugerido = `Precio sugerido de compra: ~$${precioCompraSugerido.toFixed(4)} (soporte + ATR o Fib 38.2%)`;
+            } else if (tendenciaBajista && precioActual < smaCorto && diferenciaPorcentual > -5) {
+                const precioBase = resistencia - atr;
+                const precioVentaSugerido = Math.max(precioBase, fiboLevels['61.8']);
+                recomendacion = "VENDER - Tendencia bajista confirmada";
+                precioSugerido = `Precio sugerido de venta: ~$${precioVentaSugerido.toFixed(4)} (resistencia - ATR o Fib 61.8%)`;
+            } else if (diferenciaPorcentual > 10) {
+                recomendacion = "ESPERAR - Posible sobrecompra";
+            } else if (diferenciaPorcentual < -10) {
+                recomendacion = "ESPERAR - Posible sobreventa";
+            } else {
+                recomendacion = "MANTENER - Sin tendencia clara";
+            }
+
+            return { recomendacion, precioSugerido };
+        }
+
+        function actualizarGrafico(precios, precioActual, smaCorto, smaLargo, soporte, resistencia, fiboLevels) {
+            const ctx = document.getElementById('precioChart').getContext('2d');
+            const fechas = precios.map(([timestamp]) => new Date(timestamp).toLocaleDateString('es-ES'));
+            const valores = precios.map(([_, precio]) => precio);
+
+            if (chart) chart.destroy();
+
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: fechas,
+                    datasets: [
+                        { label: 'Precio Kaspa', data: valores, borderColor: '#2196f3', fill: false },
+                        { label: 'SMA 5 días', data: Array(valores.length - 5).fill(null).concat(Array(5).fill(smaCorto)), borderColor: '#4caf50', borderDash: [5, 5], fill: false },
+                        { label: 'SMA 14 días', data: Array(valores.length).fill(smaLargo), borderColor: '#ff9800', borderDash: [5, 5], fill: false },
+                        { label: 'Soporte', data: Array(valores.length).fill(soporte), borderColor: '#f44336', borderDash: [2, 2], fill: false },
+                        { label: 'Resistencia', data: Array(valores.length).fill(resistencia), borderColor: '#f44336', borderDash: [2, 2], fill: false },
+                        { label: 'Fib 38.2%', data: Array(valores.length).fill(fiboLevels['38.2']), borderColor: '#9c27b0', borderDash: [3, 3], fill: false },
+                        { label: 'Fib 61.8%', data: Array(valores.length).fill(fiboLevels['61.8']), borderColor: '#9c27b0', borderDash: [3, 3], fill: false }
+                    ]
+                },
+                options: {
+                    scales: {
+                        y: { beginAtZero: false, title: { display: true, text: 'Precio (USD)' } },
+                        x: { title: { display: true, text: 'Fecha' } }
+                    }
+                }
+            });
+        }
+
+        function guardarAlerta(tipo, precio) {
+            const fecha = new Date().toLocaleString('es-ES', { timeZone: 'America/Argentina/Buenos_Aires' });
+            let historico = JSON.parse(localStorage.getItem('kaspaAlertas') || '[]');
+
+            const nuevaAlerta = {
+                fecha,
+                tipo,
+                precio: Number(precio).toFixed(6),
+                maxRebote: Number(precio).toFixed(6),
+                timestamp: Date.now()
+            };
+
+            historico.unshift(nuevaAlerta);
+            if (historico.length > 50) historico.pop();
+            localStorage.setItem('kaspaAlertas', JSON.stringify(historico));
+            actualizarHistorico();
+        }
+
+        function eliminarAlerta(index) {
+            let historico = JSON.parse(localStorage.getItem('kaspaAlertas') || '[]');
+            historico.splice(index, 1);
+            localStorage.setItem('kaspaAlertas', JSON.stringify(historico));
+            actualizarHistorico();
+        }
+
+        function actualizarHistorico() {
+            const historico = JSON.parse(localStorage.getItem('kaspaAlertas') || '[]');
+            const alertList = document.getElementById('alert-list');
+            alertList.innerHTML = '';
+
+            historico.slice(0, 10).forEach((item, index) => {
+                const li = document.createElement('li');
+                li.className = `alert-item alert-${item.tipo.toLowerCase()}`;
+                const reboteText = item.maxRebote === item.precio 
+                    ? `→ Rebote máx: Pendiente (actual: $${item.maxRebote})` 
+                    : `→ Rebote máx: $${item.maxRebote}`;
+                li.innerHTML = `
+                    ${item.fecha} - <strong>${item.tipo}</strong> - Precio: $${item.precio} ${reboteText}
+                    <span class="alert-delete" title="Eliminar esta alerta" onclick="eliminarAlerta(${index})">✕</span>
+                `;
+                alertList.appendChild(li);
+            });
+        }
+
+        function actualizarMaxRebote() {
+            let historico = JSON.parse(localStorage.getItem('kaspaAlertas') || '[]');
+            let changed = false;
+
+            historico = historico.map(item => {
+                const horasPasadas = (Date.now() - item.timestamp) / (1000 * 60 * 60);
+                if (horasPasadas <= 24 && currentPrice > parseFloat(item.maxRebote)) {
+                    changed = true;
+                    return { ...item, maxRebote: currentPrice.toFixed(6) };
+                }
+                return item;
+            });
+
+            if (changed) {
+                localStorage.setItem('kaspaAlertas', JSON.stringify(historico));
+                actualizarHistorico();
+            }
+        }
+
+        async function analizarKaspa() {
+            const resultadosDiv = document.getElementById('resultados');
+            const loadingDiv = document.getElementById('loading');
+            const ultimaActualizacionDiv = document.getElementById('ultima-actualizacion');
+            const alertSound = document.getElementById('alertSound');
+            const asesorRecomendacion = document.getElementById('asesor-recomendacion');
+
+            loadingDiv.style.display = 'block';
+            resultadosDiv.innerHTML = '';
+            asesorRecomendacion.innerHTML = 'Esperando análisis...';
+
+            try {
+                const proxy = 'https://corsproxy.io/?';
+                const precioUrl = proxy + encodeURIComponent('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd');
+                const chartUrl = proxy + encodeURIComponent('https://api.coingecko.com/api/v3/coins/kaspa/market_chart?vs_currency=usd&days=14&interval=daily');
+
+                const precioActualResponse = await fetch(precioUrl);
+                const datosHistoricosResponse = await fetch(chartUrl);
+
+                const precioActual = await precioActualResponse.json();
+                const datosHistoricos = await datosHistoricosResponse.json();
+
+                currentPrice = Number(precioActual.kaspa.usd);
+                if (isNaN(currentPrice)) currentPrice = parseFloat(precioActual.kaspa.usd) || 0;
+
+                const precios = datosHistoricos.prices;
+
+                const smaCorto = calcularSMA(precios.slice(-5));
+                const smaLargo = calcularSMA(precios.slice(-14));
+
+                const preciosValores = precios.map(([_, precio]) => precio);
+                const soporte = Math.min(...preciosValores);
+                const resistencia = Math.max(...preciosValores);
+
+                const atr = calcularATR(precios);
+                const fiboLevels = calcularFibonacci(soporte, resistencia);
+
+                const { recomendacion, precioSugerido } = analizarTendencia(
+                    currentPrice, smaCorto, smaLargo, soporte, resistencia, atr, fiboLevels
+                );
+
+                resultadosDiv.innerHTML = `
+                    <div class="dato precio">Precio actual: $${currentPrice.toFixed(6)}</div>
+                    <div class="dato sma">SMA 5 días: $${smaCorto}</div>
+                    <div class="dato sma">SMA 14 días: $${smaLargo}</div>
+                    <div class="dato tecnico">Soporte: $${soporte.toFixed(4)}</div>
+                    <div class="dato tecnico">Resistencia: $${resistencia.toFixed(4)}</div>
+                    <div class="dato tecnico">ATR (aprox.): $${atr.toFixed(4)}</div>
+                    <div class="dato tecnico">Fibonacci 38.2%: $${fiboLevels['38.2'].toFixed(4)}</div>
+                    <div class="dato tecnico">Fibonacci 61.8%: $${fiboLevels['61.8'].toFixed(4)}</div>
+                    <div class="recomendacion ${recomendacion.split(' -')[0].toLowerCase()}">
+                        ${recomendacion}
+                        ${precioSugerido ? `<div class="sugerencia">${precioSugerido}</div>` : ''}
+                    </div>
+                `;
+
+                actualizarGrafico(precios, currentPrice, smaCorto, smaLargo, soporte, resistencia, fiboLevels);
+
+                if (recomendacion.startsWith("COMPRAR") || recomendacion.startsWith("VENDER")) {
+                    const tipo = recomendacion.startsWith("COMPRAR") ? "COMPRA" : "VENTA";
+                    const fecha = new Date().toLocaleString('es-ES', { timeZone: 'America/Argentina/Buenos_Aires' });
+                    const precio = currentPrice.toFixed(6);
+
+                    guardarAlerta(tipo, precio);
+
+                    alert(`¡Alerta ${tipo}! Precio: $${precio}`);
+                    if (soundEnabled) {
+                        alertSound.play().catch(err => console.log("Error al reproducir sonido:", err));
+                    }
+                    mostrarSugerenciaAsesor(tipo, precioSugerido, soporte, resistencia, atr, fiboLevels);
+                }
+
+                const ahora = new Date().toLocaleString('es-ES');
+                ultimaActualizacionDiv.textContent = `Última actualización: ${ahora}`;
+
+                actualizarMaxRebote();
+
+            } catch (error) {
+                resultadosDiv.innerHTML = `<div class="recomendacion vender">Error al cargar datos: ${error.message}<br><br>Intenta recargar (F5) o abrir con servidor local.</div>`;
+            } finally {
+                loadingDiv.style.display = 'none';
+            }
+        }
+
+        function mostrarSugerenciaAsesor(tipo, precioSugerido, soporte, resistencia, atr, fiboLevels) {
+            const asesorRecomendacion = document.getElementById('asesor-recomendacion');
+            let sugerencia = '';
+
+            if (tipo === 'COMPRA') {
+                const precioVentaSugerido = resistencia + atr;
+                sugerencia = `Como asesor financiero con experiencia en criptomonedas, te recomiendo comprar ahora a ~$${precioSugerido} y poner una orden de venta a ~$${precioVentaSugerido.toFixed(4)} (resistencia + ATR o Fib 61.8%). Esto te permite aprovechar la tendencia alcista mientras gestionas el riesgo.`;
+            } else if (tipo === 'VENTA') {
+                const precioCompraSugerido = soporte - atr;
+                sugerencia = `Como asesor financiero con experiencia en criptomonedas, te recomiendo vender ahora a ~$${precioSugerido} y poner una orden de compra a ~$${precioCompraSugerido.toFixed(4)} (soporte - ATR o Fib 38.2%). Esto te permite tomar ganancias y comprar más barato en una corrección.`;
+            }
+
+            asesorRecomendacion.innerHTML = sugerencia;
+        }
+
+        // Copiar datos – versión corregida y precisa
         document.getElementById('copy-data-btn').addEventListener('click', () => {
             const datos = document.querySelectorAll('.dato');
+            const recomendacionDiv = document.querySelector('.recomendacion');
+            const ultimaDiv = document.getElementById('ultima-actualizacion');
+
             let texto = "Análisis de Kaspa\n\n";
 
-            // Agregar cada dato en el orden exacto
-            const labels = [
-                "Precio actual:",
-                "SMA 5 días:",
-                "SMA 14 días:",
-                "Soporte:",
-                "Resistencia:",
-                "ATR (aprox.):",
-                "Fibonacci 38.2%:",
-                "Fibonacci 61.8%:"
+            // Orden exacto que pediste
+            const orden = [
+                { label: "Precio actual:", selector: ".precio" },
+                { label: "SMA 5 días:", selector: ".sma:nth-child(2)" },
+                { label: "SMA 14 días:", selector: ".sma:nth-child(3)" },
+                { label: "Soporte:", selector: ".tecnico:nth-child(4)" },
+                { label: "Resistencia:", selector: ".tecnico:nth-child(5)" },
+                { label: "ATR (aprox.):", selector: ".tecnico:nth-child(6)" },
+                { label: "Fibonacci 38.2%:", selector: ".tecnico:nth-child(7)" },
+                { label: "Fibonacci 61.8%:", selector: ".tecnico:nth-child(8)" }
             ];
 
-            datos.forEach((dato, i) => {
-                if (i < labels.length) {
-                    texto += `${labels[i]} ${dato.textContent.trim().replace('Precio actual: ', '').replace('SMA 5 días: ', '').replace('SMA 14 días: ', '').replace('Soporte: ', '').replace('Resistencia: ', '').replace('ATR (aprox.): ', '').replace('Fibonacci 38.2%: ', '').replace('Fibonacci 61.8%: ', '')}\n`;
+            orden.forEach(item => {
+                const elem = document.querySelector(item.selector);
+                if (elem) {
+                    const valor = elem.textContent.trim().replace(item.label + ' ', '');
+                    texto += `${item.label} ${valor}\n`;
                 }
             });
 
-            // Recomendación completa (tomada del div .recomendacion)
-            const recomendacionDiv = document.querySelector('.recomendacion');
+            // Recomendación completa
             if (recomendacionDiv) {
-                const recomendacionText = recomendacionDiv.textContent.trim();
-                const sugerencia = recomendacionDiv.querySelector('.sugerencia')?.textContent.trim() || '';
-                texto += `\n${recomendacionText}${sugerencia ? `\n${sugerencia}` : ''}\n`;
+                const recomendacionText = recomendacionDiv.firstChild.textContent.trim();
+                const sugerenciaText = recomendacionDiv.querySelector('.sugerencia')?.textContent.trim() || '';
+                texto += `\n${recomendacionText}${sugerenciaText ? `\n${sugerenciaText}` : ''}\n`;
             }
 
             // Última actualización
-            const ultima = document.getElementById('ultima-actualizacion')?.textContent.trim() || '';
-            if (ultima) {
-                texto += `\n${ultima}`;
+            if (ultimaDiv) {
+                texto += `\n${ultimaDiv.textContent.trim()}`;
             }
 
             navigator.clipboard.writeText(texto).then(() => {
                 const toast = document.getElementById('copy-toast');
                 toast.style.opacity = '1';
-                setTimeout(() => {
-                    toast.style.opacity = '0';
-                }, 2000);
+                setTimeout(() => { toast.style.opacity = '0'; }, 2000);
             }).catch(err => {
                 console.error('Error al copiar:', err);
-                alert('No se pudo copiar. Intenta seleccionar manualmente el texto.');
+                alert('No se pudo copiar automáticamente. Copia manualmente el texto.');
             });
         });
 
@@ -196,6 +516,6 @@
         setInterval(analizarKaspa, 300000);
     </script>
 
-    <!-- Versión: alpha . 0020 -->
+    <!-- Versión: alpha . 0021 -->
 </body>
 </html>
