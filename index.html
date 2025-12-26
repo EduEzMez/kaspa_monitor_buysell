@@ -7,58 +7,21 @@
     <link rel="icon" type="image/png" href="https://i0.wp.com/kaspa.org/wp-content/uploads/2023/06/Kaspa-Icon-16.png?resize=16%2C16&ssl=1">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 20px auto;
-            padding: 20px;
-            background-color: #f0f0f0;
-            color: #333;
-            transition: all 0.3s ease;
-        }
-        /* Modo oscuro */
-        body.dark-mode {
-            background-color: #1e1e1e;
-            color: #e0e0e0;
-        }
-        /* Modo escala de grises cuando está en dark-mode */
-        body.dark-mode.grayscale {
-            filter: grayscale(100%);
-        }
-        .container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        body.dark-mode .container {
-            background-color: #2e2e2e;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.6);
-        }
-        h1, h2 {
-            color: #333;
-        }
-        body.dark-mode h1, body.dark-mode h2 {
-            color: #ffffff;
-        }
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 20px auto; padding: 20px; background-color: #f0f0f0; transition: all 0.3s ease; color: #333; }
+        body.dark-mode { background-color: #1e1e1e; color: #e0e0e0; filter: grayscale(100%); }
+        .container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        body.dark-mode .container { background-color: #2e2e2e; box-shadow: 0 2px 5px rgba(0,0,0,0.6); }
+        h1, h2 { color: #333; text-align: center; }
+        body.dark-mode h1, body.dark-mode h2 { color: #ffffff; }
         #resultados { margin-top: 20px; }
-        .dato {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 5px;
-        }
+        .dato { margin: 10px 0; padding: 10px; border-radius: 5px; }
         .precio { background-color: #e3f2fd; }
         .sma { background-color: #f1f8e9; }
         .tecnico { background-color: #fff3e0; }
         body.dark-mode .precio { background-color: #3a4a5a; }
         body.dark-mode .sma { background-color: #4a5a3a; }
         body.dark-mode .tecnico { background-color: #5a4a3a; }
-        .recomendacion {
-            font-weight: bold;
-            padding: 15px;
-            text-align: center;
-            border-radius: 5px;
-        }
+        .recomendacion { font-weight: bold; padding: 15px; text-align: center; border-radius: 5px; }
         .comprar { background-color: #4caf50; color: white; }
         .vender { background-color: #f44336; color: white; }
         .esperar { background-color: #ff9800; color: white; }
@@ -71,82 +34,33 @@
         .sugerencia { font-style: italic; margin-top: 5px; color: #555; }
         body.dark-mode .sugerencia { color: #c0c0c0; }
         #chart-container { margin-top: 20px; }
-        #theme-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 10px 15px;
-            background-color: #666;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            z-index: 1000;
-        }
+        #theme-toggle { position: fixed; top: 20px; right: 20px; padding: 10px 15px; background-color: #666; color: white; border: none; border-radius: 5px; cursor: pointer; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 1000; }
         #theme-toggle:hover { background-color: #555; }
         body.dark-mode #theme-toggle { background-color: #888; }
         body.dark-mode #theme-toggle:hover { background-color: #999; }
-        #kaspa-calculator {
-            margin-top: 20px;
-            padding: 15px;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
+        #kaspa-calculator { margin-top: 20px; padding: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         body.dark-mode #kaspa-calculator { background-color: #2e2e2e; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
         #kaspa-input { padding: 5px; width: 150px; margin-right: 10px; }
-        #calculate-button {
-            padding: 5px 10px;
-            background-color: #4caf50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
+        #calculate-button { padding: 5px 10px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; }
         #calculate-button:hover { background-color: #45a049; }
         body.dark-mode #calculate-button { background-color: #45a049; }
         body.dark-mode #calculate-button:hover { background-color: #3d8b40; }
         #kaspa-value { margin-top: 10px; font-weight: bold; color: #333; }
         body.dark-mode #kaspa-value { color: #e0e0e0; }
-        #alert-history {
-            margin-top: 30px;
-            padding: 15px;
-            background-color: white;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
+        #alert-history { margin-top: 30px; padding: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         body.dark-mode #alert-history { background-color: #2e2e2e; }
         #alert-list { list-style: none; padding: 0; max-height: 400px; overflow-y: auto; }
-        .alert-item {
-            padding: 10px;
-            margin: 8px 0;
-            border-radius: 6px;
-            font-size: 14px;
-            display: flex;
-            justify-content: space-between;
-        }
+        .alert-item { padding: 10px; margin: 8px 0; border-radius: 6px; font-size: 14px; display: flex; justify-content: space-between; }
         .alert-compra { background-color: #e6ffe6; color: #006400; }
         body.dark-mode .alert-compra { background-color: #004d00; color: #90ee90; }
         .alert-venta { background-color: #ffe6e6; color: #8b0000; }
         body.dark-mode .alert-venta { background-color: #4d0000; color: #ff9999; }
         .alert-rebote { font-weight: bold; color: #0066cc; }
         body.dark-mode .alert-rebote { color: #66ccff; }
-        #asesor-section {
-            margin-top: 30px;
-            padding: 15px;
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
+        #asesor-section { margin-top: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         body.dark-mode #asesor-section { background-color: #2e2e2e; color: #e0e0e0; }
         #asesor-recomendacion { font-size: 16px; line-height: 1.5; }
-        #version {
-            text-align: center;
-            font-size: 12px;
-            color: #888;
-            margin-top: 20px;
-        }
+        #version { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
         body.dark-mode #version { color: #aaa; }
     </style>
 </head>
@@ -180,13 +94,13 @@
 
     <button id="theme-toggle">Modo Oscuro</button>
 
-    <p id="version">Versión: alpha . 0007</p>
+    <p id="version">Versión: alpha . 0008</p>
 
     <script>
         let chart;
         let currentPrice = 0;
 
-        // Funciones auxiliares (ordenadas antes de analizarKaspa)
+        // Funciones auxiliares
         function calcularSMA(precios) {
             const suma = precios.reduce((acc, [_, precio]) => acc + precio, 0);
             return Number((suma / precios.length).toFixed(4));
@@ -345,7 +259,10 @@
                 const precioActual = await precioActualResponse.json();
                 const datosHistoricos = await datosHistoricosResponse.json();
 
-                currentPrice = precioActual.kaspa.usd;
+                // Convertir a número explícitamente
+                currentPrice = Number(precioActual.kaspa.usd);
+                if (isNaN(currentPrice)) throw new Error('Precio no válido desde API');
+
                 const precios = datosHistoricos.prices;
 
                 const smaCorto = calcularSMA(precios.slice(-5));
@@ -451,6 +368,6 @@
         });
     </script>
 
-    <!-- Versión: alpha . 0007 -->
+    <!-- Versión: alpha . 0008 -->
 </body>
 </html>
