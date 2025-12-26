@@ -54,31 +54,31 @@
         .sugerencia { font-style: italic; margin-top: 5px; color: #555; }
         body.dark-mode .sugerencia { color: #c0c0c0; }
         #chart-container { margin-top: 20px; }
-        /* Controles superiores derechos FIJOS y sin filtro */
         #top-controls-wrapper {
-            position: fixed;
-            top: 15px;
-            right: 15px;
+            position: fixed !important;
+            top: 15px !important;
+            right: 15px !important;
             display: flex;
             gap: 12px;
-            z-index: 9999; /* Muy alto para estar siempre encima */
-            pointer-events: none; /* Evita que el wrapper interfiera */
+            z-index: 9999 !important;
+            pointer-events: none;
+            filter: none !important;
         }
         .control-btn {
             width: 44px;
             height: 44px;
             border-radius: 50%;
-            background-color: #666;
+            background-color: rgba(102, 102, 102, 0.9);
             color: white;
-            border: none;
+            border: 2px solid rgba(255,255,255,0.3);
             font-size: 22px;
             cursor: pointer;
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 3px 8px rgba(0,0,0,0.4);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
             transition: all 0.3s ease;
-            pointer-events: auto; /* Solo los botones responden al clic */
+            pointer-events: auto;
         }
         .control-btn:hover {
             background-color: #555;
@@ -88,7 +88,8 @@
             background-color: #4caf50;
         }
         body.dark-mode .control-btn {
-            background-color: #888;
+            background-color: rgba(136, 136, 136, 0.9);
+            border-color: rgba(255,255,255,0.5);
         }
         body.dark-mode .control-btn:hover {
             background-color: #999;
@@ -105,7 +106,35 @@
         #alert-history { margin-top: 30px; padding: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         body.dark-mode #alert-history { background-color: #2e2e2e; }
         #alert-list { list-style: none; padding: 0; max-height: 400px; overflow-y: auto; }
-        .alert-item { padding: 10px; margin: 8px 0; border-radius: 6px; font-size: 14px; }
+        .alert-item {
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 6px;
+            font-size: 14px;
+            position: relative;
+        }
+        .alert-delete {
+            position: absolute;
+            top: 8px;
+            right: 10px;
+            color: #f44336;
+            font-size: 18px;
+            cursor: pointer;
+            font-weight: bold;
+            background: rgba(255,255,255,0.8);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            line-height: 24px;
+            text-align: center;
+        }
+        body.dark-mode .alert-delete {
+            background: rgba(0,0,0,0.7);
+            color: #ff9999;
+        }
+        .alert-delete:hover {
+            color: #d32f2f;
+        }
         .alert-compra { background-color: #e6ffe6; color: #006400; }
         body.dark-mode .alert-compra { background-color: #004d00; color: #90ee90; }
         .alert-venta { background-color: #ffe6e6; color: #8b0000; }
@@ -120,11 +149,9 @@
     </style>
 </head>
 <body>
-    <!-- Controles superiores derechos FIJOS -->
+    <!-- Controles superiores derechos - FIJOS -->
     <div id="top-controls-wrapper">
-        <!-- Botón Sonido -->
         <button id="toggle-sound" class="control-btn" title="Sonido de alerta: ON">♪</button>
-        <!-- Botón Modo Oscuro -->
         <button id="theme-toggle" class="control-btn" title="Modo Oscuro">💡</button>
     </div>
 
@@ -156,7 +183,7 @@
         <p id="asesor-recomendacion">Esperando análisis...</p>
     </div>
 
-    <p id="version">Versión: alpha . 0017</p>
+    <p id="version">Versión: alpha . 0018</p>
 
     <script>
         let chart;
@@ -263,18 +290,28 @@
             actualizarHistorico();
         }
 
+        function eliminarAlerta(index) {
+            let historico = JSON.parse(localStorage.getItem('kaspaAlertas') || '[]');
+            historico.splice(index, 1); // Elimina el elemento en la posición index
+            localStorage.setItem('kaspaAlertas', JSON.stringify(historico));
+            actualizarHistorico(); // Actualiza la vista
+        }
+
         function actualizarHistorico() {
             const historico = JSON.parse(localStorage.getItem('kaspaAlertas') || '[]');
             const alertList = document.getElementById('alert-list');
             alertList.innerHTML = '';
 
-            historico.slice(0, 10).forEach(item => {
+            historico.slice(0, 10).forEach((item, index) => {
                 const li = document.createElement('li');
                 li.className = `alert-item alert-${item.tipo.toLowerCase()}`;
                 const reboteText = item.maxRebote === item.precio 
                     ? `→ Rebote máx: Pendiente (actual: $${item.maxRebote})` 
                     : `→ Rebote máx: $${item.maxRebote}`;
-                li.innerHTML = `${item.fecha} - <strong>${item.tipo}</strong> - Precio: $${item.precio} ${reboteText}`;
+                li.innerHTML = `
+                    ${item.fecha} - <strong>${item.tipo}</strong> - Precio: $${item.precio} ${reboteText}
+                    <span class="alert-delete" title="Eliminar esta alerta" onclick="eliminarAlerta(${index})">✕</span>
+                `;
                 alertList.appendChild(li);
             });
         }
@@ -435,6 +472,6 @@
         setInterval(analizarKaspa, 300000);
     </script>
 
-    <!-- Versión: alpha . 0017 -->
+    <!-- Versión: alpha . 0018 -->
 </body>
 </html>
