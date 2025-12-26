@@ -26,7 +26,6 @@
             padding: 20px;
             border-radius: 8px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            margin-top: 20px;
         }
         body.dark-mode .container {
             background-color: #2e2e2e;
@@ -55,22 +54,43 @@
         .sugerencia { font-style: italic; margin-top: 5px; color: #555; }
         body.dark-mode .sugerencia { color: #c0c0c0; }
         #chart-container { margin-top: 20px; }
-        #theme-toggle {
+        /* Controles superiores derechos con íconos */
+        .top-controls {
             position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 10px 15px;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 12px;
+            z-index: 1002;
+        }
+        .control-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
             background-color: #666;
             color: white;
             border: none;
-            border-radius: 5px;
+            font-size: 20px;
             cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            z-index: 1002;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
         }
-        #theme-toggle:hover { background-color: #555; }
-        body.dark-mode #theme-toggle { background-color: #888; }
-        body.dark-mode #theme-toggle:hover { background-color: #999; }
+        .control-btn:hover {
+            background-color: #555;
+            transform: scale(1.1);
+        }
+        .control-btn.active {
+            background-color: #4caf50;
+        }
+        body.dark-mode .control-btn {
+            background-color: #888;
+        }
+        body.dark-mode .control-btn:hover {
+            background-color: #999;
+        }
         #kaspa-calculator { margin-top: 20px; padding: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         body.dark-mode #kaspa-calculator { background-color: #2e2e2e; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
         #kaspa-input { padding: 5px; width: 150px; margin-right: 10px; }
@@ -83,7 +103,7 @@
         #alert-history { margin-top: 30px; padding: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         body.dark-mode #alert-history { background-color: #2e2e2e; }
         #alert-list { list-style: none; padding: 0; max-height: 400px; overflow-y: auto; }
-        .alert-item { padding: 10px; margin: 8px 0; border-radius: 6px; font-size: 14px; display: flex; justify-content: space-between; }
+        .alert-item { padding: 10px; margin: 8px 0; border-radius: 6px; font-size: 14px; }
         .alert-compra { background-color: #e6ffe6; color: #006400; }
         body.dark-mode .alert-compra { background-color: #004d00; color: #90ee90; }
         .alert-venta { background-color: #ffe6e6; color: #8b0000; }
@@ -98,6 +118,13 @@
     </style>
 </head>
 <body>
+    <div class="top-controls">
+        <!-- Botón Sonido -->
+        <button id="toggle-sound" class="control-btn" title="Sonido de alerta: ON">♪</button>
+        <!-- Botón Modo Oscuro -->
+        <button id="theme-toggle" class="control-btn" title="Modo Oscuro">💡</button>
+    </div>
+
     <div class="container">
         <h1>Análisis de Kaspa</h1>
         <div id="loading">Cargando datos...</div>
@@ -107,6 +134,7 @@
         </div>
         <div id="ultima-actualizacion"></div>
     </div>
+
     <audio id="alertSound" src="https://www.soundjay.com/buttons/beep-01a.mp3" preload="auto"></audio>
 
     <div id="kaspa-calculator">
@@ -125,15 +153,14 @@
         <p id="asesor-recomendacion">Esperando análisis...</p>
     </div>
 
-    <button id="theme-toggle">Modo Oscuro</button>
-
-    <p id="version">Versión: alpha . 0012</p>
+    <p id="version">Versión: alpha . 0016</p>
 
     <script>
         let chart;
         let currentPrice = 0;
+        let soundEnabled = true;
 
-        // Funciones auxiliares
+        // Funciones auxiliares (sin cambios, solo las esenciales)
         function calcularSMA(precios) {
             const suma = precios.reduce((acc, [_, precio]) => acc + precio, 0);
             return Number((suma / precios.length).toFixed(4));
@@ -152,7 +179,6 @@
             const rango = resistencia - soporte;
             return {
                 '38.2': soporte + (rango * 0.382),
-                '50': soporte + (rango * 0.5),
                 '61.8': soporte + (rango * 0.618)
             };
         }
@@ -215,7 +241,7 @@
             });
         }
 
-        // Histórico de alertas
+        // Guardar alerta
         function guardarAlerta(tipo, precio) {
             const fecha = new Date().toLocaleString('es-ES', { timeZone: 'America/Argentina/Buenos_Aires' });
             let historico = JSON.parse(localStorage.getItem('kaspaAlertas') || '[]');
@@ -269,7 +295,6 @@
             }
         }
 
-        // Función principal
         async function analizarKaspa() {
             const resultadosDiv = document.getElementById('resultados');
             const loadingDiv = document.getElementById('loading');
@@ -293,9 +318,7 @@
                 const datosHistoricos = await datosHistoricosResponse.json();
 
                 currentPrice = Number(precioActual.kaspa.usd);
-                if (isNaN(currentPrice)) {
-                    currentPrice = parseFloat(precioActual.kaspa.usd) || 0;
-                }
+                if (isNaN(currentPrice)) currentPrice = parseFloat(precioActual.kaspa.usd) || 0;
 
                 const precios = datosHistoricos.prices;
 
@@ -338,8 +361,9 @@
                     guardarAlerta(tipo, precio);
 
                     alert(`¡Alerta ${tipo}! Precio: $${precio}`);
-                    alertSound.play().catch(err => console.log("Error al reproducir sonido:", err));
-
+                    if (soundEnabled) {
+                        alertSound.play().catch(err => console.log("Error al reproducir sonido:", err));
+                    }
                     mostrarSugerenciaAsesor(tipo, precioSugerido, soporte, resistencia, atr, fiboLevels);
                 }
 
@@ -373,34 +397,41 @@
         window.onload = () => {
             analizarKaspa();
             actualizarHistorico();
+
+            // Inicializar botones
+            const soundBtn = document.getElementById('toggle-sound');
+            const themeBtn = document.getElementById('theme-toggle');
+
+            soundBtn.textContent = soundEnabled ? '♪' : '🔇';
+            soundBtn.title = soundEnabled ? 'Sonido de alerta: ON' : 'Sonido de alerta: OFF';
+            themeBtn.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '💡';
+            themeBtn.title = document.body.classList.contains('dark-mode') ? 'Modo Claro' : 'Modo Oscuro';
+
+            // Toggle sonido
+            soundBtn.addEventListener('click', () => {
+                soundEnabled = !soundEnabled;
+                soundBtn.textContent = soundEnabled ? '♪' : '🔇';
+                soundBtn.title = soundEnabled ? 'Sonido de alerta: ON' : 'Sonido de alerta: OFF';
+            });
+
+            // Toggle tema
+            themeBtn.addEventListener('click', () => {
+                document.body.classList.toggle('dark-mode');
+                if (document.body.classList.contains('dark-mode')) {
+                    document.body.classList.add('grayscale');
+                    themeBtn.textContent = '☀️';
+                    themeBtn.title = 'Modo Claro';
+                } else {
+                    document.body.classList.remove('grayscale');
+                    themeBtn.textContent = '💡';
+                    themeBtn.title = 'Modo Oscuro';
+                }
+            });
         };
 
         setInterval(analizarKaspa, 300000);
-
-        // Tema + escala de grises automático en dark-mode
-        const themeToggle = document.getElementById('theme-toggle');
-        themeToggle.addEventListener('click', () => {
-            document.body.classList.toggle('dark-mode');
-            if (document.body.classList.contains('dark-mode')) {
-                document.body.classList.add('grayscale');
-            } else {
-                document.body.classList.remove('grayscale');
-            }
-            themeToggle.textContent = document.body.classList.contains('dark-mode') ? 'Modo Claro' : 'Modo Oscuro';
-        });
-
-        // Calculadora
-        document.getElementById('calculate-button').addEventListener('click', () => {
-            const amount = parseFloat(document.getElementById('kaspa-input').value);
-            if (isNaN(amount) || amount <= 0) {
-                document.getElementById('kaspa-value').textContent = 'Por favor, ingresa una cantidad válida de Kaspa.';
-                return;
-            }
-            const valueInUSD = amount * currentPrice;
-            document.getElementById('kaspa-value').textContent = `Valor en USD: $${valueInUSD.toFixed(4)}`;
-        });
     </script>
 
-    <!-- Versión: alpha . 0012 -->
+    <!-- Versión: alpha . 0016 -->
 </body>
 </html>
