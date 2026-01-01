@@ -101,15 +101,45 @@
             transition: opacity 0.4s ease;
             font-weight: bold;
         }
-        #kaspa-calculator { margin-top: 20px; padding: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        body.dark-mode #kaspa-calculator { background-color: #2e2e2e; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
-        #kaspa-input { padding: 5px; width: 150px; margin-right: 10px; }
-        #calculate-button { padding: 5px 10px; background-color: #4caf50; color: white; border: none; border-radius: 5px; cursor: pointer; }
-        #calculate-button:hover { background-color: #45a049; }
-        body.dark-mode #calculate-button { background-color: #45a049; }
-        body.dark-mode #calculate-button:hover { background-color: #3d8b40; }
-        #kaspa-value { margin-top: 10px; font-weight: bold; color: #333; }
-        body.dark-mode #kaspa-value { color: #e0e0e0; }
+        #kaspa-calculator {
+            margin-top: 20px;
+            padding: 20px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        body.dark-mode #kaspa-calculator {
+            background-color: #2e2e2e;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+        #kaspa-calculator label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+        #kaspa-amount {
+            padding: 8px;
+            width: 180px;
+            font-size: 16px;
+        }
+        #clear-amount {
+            padding: 8px 12px;
+            background: #ff5722;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        #clear-amount:hover { background: #e64a19; }
+        #value-display {
+            margin-top: 15px;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+        #value-display div {
+            margin: 8px 0;
+        }
         #alert-history { margin-top: 30px; padding: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         body.dark-mode #alert-history { background-color: #2e2e2e; }
         #alert-list { list-style: none; padding: 0; max-height: 400px; overflow-y: auto; }
@@ -146,11 +176,6 @@
         body.dark-mode .alert-venta { background-color: #4d0000; color: #ff9999; }
         .alert-rebote { font-weight: bold; color: #0066cc; }
         body.dark-mode .alert-rebote { color: #66ccff; }
-        #asesor-section { margin-top: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        body.dark-mode #asesor-section { background-color: #2e2e2e; color: #e0e0e0; }
-        #asesor-recomendacion { font-size: 16px; line-height: 1.5; }
-        #version { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
-        body.dark-mode #version { color: #aaa; }
         .history-buttons {
             text-align: center;
             margin: 15px 0;
@@ -163,11 +188,7 @@
             font-size: 14px;
             transition: all 0.3s ease;
         }
-        #clear-history {
-            background-color: #ff5722;
-            color: white;
-            border: none;
-        }
+        #clear-history { background-color: #ff5722; color: white; border: none; }
         #clear-history:hover { background-color: #e64a19; }
         #delete-all-alerts {
             background-color: #f44336;
@@ -179,13 +200,14 @@
             background-color: #d32f2f;
             transform: scale(1.1);
         }
-        #export-csv {
-            background-color: #2196f3;
-            color: white;
-            border: none;
-        }
+        #export-csv { background-color: #2196f3; color: white; border: none; }
         #export-csv:hover { background-color: #1976d2; }
         body.dark-mode .history-buttons button { opacity: 0.9; }
+        #asesor-section { margin-top: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        body.dark-mode #asesor-section { background-color: #2e2e2e; color: #e0e0e0; }
+        #asesor-recomendacion { font-size: 16px; line-height: 1.5; }
+        #version { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
+        body.dark-mode #version { color: #aaa; }
     </style>
 </head>
 <body>
@@ -211,10 +233,25 @@
 
     <audio id="alertSound" src="https://www.soundjay.com/buttons/beep-01a.mp3" preload="auto"></audio>
 
+    <!-- Calculadora mejorada con persistencia y ARS -->
     <div id="kaspa-calculator">
-        <input type="number" id="kaspa-input" placeholder="Cantidad de Kaspa" min="0" step="0.0001">
-        <button id="calculate-button">Calcular Valor en USD</button>
-        <div id="kaspa-value"></div>
+        <h3>Calculadora de valor (persiste en tu navegador)</h3>
+        
+        <label for="kaspa-amount">Cantidad de Kaspa que tenés:</label><br>
+        <input type="number" id="kaspa-amount" placeholder="Ej: 10000" min="0" step="0.0001">
+        
+        <button id="clear-amount" style="margin-left: 10px; background: #ff5722; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;">
+            Limpiar
+        </button>
+
+        <div id="value-display" style="margin-top: 15px; font-size: 1.1em; font-weight: bold;">
+            <div>Valor en USD: <span id="usd-value">-</span></div>
+            <div>Valor en ARS: <span id="ars-value">-</span></div>
+        </div>
+
+        <p style="font-size: 0.85em; color: #777; margin-top: 10px;">
+            El valor se actualiza automáticamente con el precio actual. Tus Kaspa quedan guardados localmente.
+        </p>
     </div>
 
     <div id="alert-history">
@@ -232,14 +269,16 @@
         <p id="asesor-recomendacion">Esperando análisis...</p>
     </div>
 
-    <p id="version">Versión: alpha . 0022</p>
+    <p id="version">Versión: alpha . 0023</p>
 
     <script>
         let chart;
         let currentPrice = 0;
         let soundEnabled = true;
 
-        // Funciones auxiliares
+        // Tasa ARS/USD - CAMBIAR ESTE VALOR CUANDO SEA NECESARIO
+        const arsPerUsd = 1200; // ← Actualiza este valor con la tasa blue/oficial/MEP que uses
+
         function calcularSMA(precios) {
             const suma = precios.reduce((acc, [_, precio]) => acc + precio, 0);
             return Number((suma / precios.length).toFixed(4));
@@ -468,6 +507,9 @@
 
                 actualizarMaxRebote();
 
+                // Actualizar calculadora con nuevo precio
+                updateCalculatorValues();
+
             } catch (error) {
                 resultadosDiv.innerHTML = `<div class="recomendacion vender">Error al cargar datos: ${error.message}<br><br>Intenta recargar (F5) o abrir con servidor local.</div>`;
             } finally {
@@ -537,6 +579,46 @@
             });
         });
 
+        // Calculadora con persistencia y ARS
+        function updateCalculatorValues() {
+            const amountInput = document.getElementById('kaspa-amount');
+            const amount = parseFloat(amountInput.value) || 0;
+
+            const usdValue = amount * currentPrice;
+            const arsValue = usdValue * arsPerUsd;
+
+            document.getElementById('usd-value').textContent = 
+                usdValue > 0 ? `$${usdValue.toFixed(2)} USD` : '-';
+
+            document.getElementById('ars-value').textContent = 
+                arsValue > 0 ? `$${arsValue.toLocaleString('es-AR')} ARS` : '-';
+        }
+
+        // Cargar cantidad guardada al iniciar
+        window.addEventListener('load', () => {
+            const savedAmount = localStorage.getItem('kaspaAmount');
+            if (savedAmount) {
+                document.getElementById('kaspa-amount').value = savedAmount;
+                updateCalculatorValues();
+            }
+        });
+
+        // Guardar cantidad cuando cambia
+        document.getElementById('kaspa-amount').addEventListener('input', () => {
+            const amount = parseFloat(document.getElementById('kaspa-amount').value) || 0;
+            localStorage.setItem('kaspaAmount', amount);
+            updateCalculatorValues();
+        });
+
+        // Limpiar cantidad
+        document.getElementById('clear-amount').addEventListener('click', () => {
+            if (confirm('¿Querés borrar la cantidad de Kaspa guardada?')) {
+                localStorage.removeItem('kaspaAmount');
+                document.getElementById('kaspa-amount').value = '';
+                updateCalculatorValues();
+            }
+        });
+
         window.onload = () => {
             analizarKaspa();
             actualizarHistorico();
@@ -568,7 +650,6 @@
                 }
             });
 
-            // Botón eliminar TODAS las alertas
             document.getElementById('delete-all-alerts').addEventListener('click', () => {
                 if (confirm("⚠️ ¿Seguro que querés BORRAR TODAS las alertas? Esta acción NO se puede deshacer.")) {
                     localStorage.removeItem('kaspaAlertas');
@@ -581,6 +662,6 @@
         setInterval(analizarKaspa, 300000);
     </script>
 
-    <!-- Versión: alpha . 0022 -->
+    <!-- Versión: alpha . 0023 -->
 </body>
 </html>
