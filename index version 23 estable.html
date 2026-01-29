@@ -208,18 +208,6 @@
         #asesor-recomendacion { font-size: 16px; line-height: 1.5; }
         #version { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
         body.dark-mode #version { color: #aaa; }
-        #retry-btn {
-            margin: 10px auto;
-            display: block;
-            padding: 10px 20px;
-            background: #2196f3;
-            color: white;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-        #retry-btn:hover { background: #1976d2; }
     </style>
 </head>
 <body>
@@ -237,7 +225,6 @@
         <h1>Análisis de Kaspa</h1>
         <div id="loading">Cargando datos...</div>
         <div id="resultados"></div>
-        <button id="retry-btn" style="display:none;">Reintentar carga</button>
         <div id="chart-container">
             <canvas id="precioChart"></canvas>
         </div>
@@ -282,7 +269,7 @@
         <p id="asesor-recomendacion">Esperando análisis...</p>
     </div>
 
-    <p id="version">Versión: alpha . 0025</p>
+    <p id="version">Versión: alpha . 0023</p>
 
     <script>
         let chart;
@@ -290,7 +277,7 @@
         let soundEnabled = true;
 
         // Tasa ARS/USD - CAMBIAR ESTE VALOR CUANDO SEA NECESARIO
-        const arsPerUsd = 1200; // ← Actualiza con la tasa blue/oficial/MEP que uses
+        const arsPerUsd = 1200; // ← Actualiza este valor con la tasa blue/oficial/MEP que uses
 
         function calcularSMA(precios) {
             const suma = precios.reduce((acc, [_, precio]) => acc + precio, 0);
@@ -446,81 +433,37 @@
         async function analizarKaspa() {
             const resultadosDiv = document.getElementById('resultados');
             const loadingDiv = document.getElementById('loading');
-            const retryBtn = document.getElementById('retry-btn');
             const ultimaActualizacionDiv = document.getElementById('ultima-actualizacion');
             const alertSound = document.getElementById('alertSound');
             const asesorRecomendacion = document.getElementById('asesor-recomendacion');
 
             loadingDiv.style.display = 'block';
             resultadosDiv.innerHTML = '';
-            retryBtn.style.display = 'none';
             asesorRecomendacion.innerHTML = 'Esperando análisis...';
 
-            let currentPriceTemp = 0;
-            let precios = [];
-
-            const proxy = 'https://api.allorigins.win/raw?url=';
-
             try {
-                // 1. Intentamos CoinGecko (principal)
+                const proxy = 'https://corsproxy.io/?';
                 const precioUrl = proxy + encodeURIComponent('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd');
-                const precioResponse = await fetch(precioUrl);
-                if (!precioResponse.ok) throw new Error(`HTTP ${precioResponse.status} en CoinGecko`);
-
-                const precioData = await precioResponse.json();
-                if (!precioData.kaspa || typeof precioData.kaspa.usd !== 'number') {
-                    throw new Error("Formato de CoinGecko inválido");
-                }
-
-                currentPriceTemp = precioData.kaspa.usd;
-
-                // Gráfico
                 const chartUrl = proxy + encodeURIComponent('https://api.coingecko.com/api/v3/coins/kaspa/market_chart?vs_currency=usd&days=14&interval=daily');
-                const chartResponse = await fetch(chartUrl);
-                if (!chartResponse.ok) throw new Error(`HTTP ${chartResponse.status} en gráfico`);
 
-                const chartData = await chartResponse.json();
-                precios = chartData.prices || [];
+                const precioActualResponse = await fetch(precioUrl);
+                const datosHistoricosResponse = await fetch(chartUrl);
 
-            } catch (error) {
-                console.warn("CoinGecko falló:", error.message);
-                resultadosDiv.innerHTML += `<div style="color:#f44336;">CoinGecko falló: ${error.message}</div>`;
+                const precioActual = await precioActualResponse.json();
+                const datosHistoricos = await datosHistoricosResponse.json();
 
-                // Fallback 1: CoinPaprika
-                try {
-                    const papUrl = proxy + encodeURIComponent('https://api.coinpaprika.com/v1/tickers/kas-kaspa');
-                    const papResponse = await fetch(papUrl);
-                    if (!papResponse.ok) throw new Error(`HTTP ${papResponse.status}`);
+                currentPrice = Number(precioActual.kaspa.usd);
+                if (isNaN(currentPrice)) currentPrice = parseFloat(precioActual.kaspa.usd) || 0;
 
-                    const papData = await papResponse.json();
-                    currentPriceTemp = Number(papData?.quotes?.USD?.price) || 0;
-                    if (currentPriceTemp > 0) resultadosDiv.innerHTML += `<div style="color:#4caf50;">Precio vía CoinPaprika: $${currentPriceTemp.toFixed(6)}</div>`;
-                } catch (papError) {
-                    console.warn("CoinPaprika falló:", papError);
-                }
-            }
-
-            // Si no hay precio válido después de los intentos
-            if (currentPriceTemp <= 0) {
-                resultadosDiv.innerHTML = `<div class="recomendacion vender">No se pudo obtener el precio actual de ninguna fuente.<br>Intenta de nuevo o usa VPN.</div>`;
-                retryBtn.style.display = 'block';
-                loadingDiv.style.display = 'none';
-                return;
-            }
-
-            currentPrice = currentPriceTemp;
-
-            try {
-                // Procesar datos históricos (si no hay, usamos fallback simple)
-                if (precios.length < 14) {
-                    precios = Array(14).fill([Date.now(), currentPrice]);
-                }
+                const precios = datosHistoricos.prices;
 
                 const smaCorto = calcularSMA(precios.slice(-5));
                 const smaLargo = calcularSMA(precios.slice(-14));
-                const preciosValores = precios.map(([_, p]) => p);
+
+                const preciosValores = precios.map(([_, precio]) => precio);
                 const soporte = Math.min(...preciosValores);
                 const resistencia = Math.max(...preciosValores);
+
                 const atr = calcularATR(precios);
                 const fiboLevels = calcularFibonacci(soporte, resistencia);
 
@@ -563,18 +506,16 @@
                 ultimaActualizacionDiv.textContent = `Última actualización: ${ahora}`;
 
                 actualizarMaxRebote();
+
+                // Actualizar calculadora con nuevo precio
                 updateCalculatorValues();
 
-            } catch (processingError) {
-                resultadosDiv.innerHTML += `<div style="color:#f44336;">Error procesando datos: ${processingError.message}</div>`;
-                retryBtn.style.display = 'block';
+            } catch (error) {
+                resultadosDiv.innerHTML = `<div class="recomendacion vender">Error al cargar datos: ${error.message}<br><br>Intenta recargar (F5) o abrir con servidor local.</div>`;
             } finally {
                 loadingDiv.style.display = 'none';
             }
         }
-
-        // Botón reintentar
-        document.getElementById('retry-btn').addEventListener('click', analizarKaspa);
 
         function mostrarSugerenciaAsesor(tipo, precioSugerido, soporte, resistencia, atr, fiboLevels) {
             const asesorRecomendacion = document.getElementById('asesor-recomendacion');
@@ -721,6 +662,6 @@
         setInterval(analizarKaspa, 300000);
     </script>
 
-    <!-- Versión: alpha . 0025 -->
+    <!-- Versión: alpha . 0023 -->
 </body>
 </html>
