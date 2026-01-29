@@ -7,30 +7,10 @@
     <link rel="icon" type="image/png" href="https://i0.wp.com/kaspa.org/wp-content/uploads/2023/06/Kaspa-Icon-16.png?resize=16%2C16&ssl=1">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px 10px;
-            background-color: #f0f0f0;
-            transition: all 0.3s ease;
-            color: #333;
-        }
-        body.dark-mode {
-            background-color: #1e1e1e;
-            color: #e0e0e0;
-            filter: grayscale(100%);
-        }
-        .container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        body.dark-mode .container {
-            background-color: #2e2e2e;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.6);
-        }
+        body { font-family: Arial, sans-serif; max-width: 900px; margin: 0 auto; padding: 20px 10px; background-color: #f0f0f0; transition: all 0.3s ease; color: #333; }
+        body.dark-mode { background-color: #1e1e1e; color: #e0e0e0; filter: grayscale(100%); }
+        .container { background-color: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        body.dark-mode .container { background-color: #2e2e2e; box-shadow: 0 2px 5px rgba(0,0,0,0.6); }
         h1, h2 { color: #333; text-align: center; }
         body.dark-mode h1, body.dark-mode h2 { color: #ffffff; }
         #resultados { margin-top: 20px; }
@@ -208,23 +188,34 @@
         #asesor-recomendacion { font-size: 16px; line-height: 1.5; }
         #version { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
         body.dark-mode #version { color: #aaa; }
+        #retry-btn {
+            margin: 10px auto;
+            display: block;
+            padding: 10px 20px;
+            background: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #retry-btn:hover { background: #1976d2; }
     </style>
 </head>
 <body>
-    <!-- Controles superiores derechos - FIJOS -->
     <div id="top-controls-wrapper">
         <button id="toggle-sound" class="control-btn" title="Sonido de alerta: ON">♪</button>
         <button id="copy-data-btn" class="control-btn" title="Copiar datos">📄</button>
         <button id="theme-toggle" class="control-btn" title="Modo Oscuro">💡</button>
     </div>
 
-    <!-- Notificación temporal -->
     <div id="copy-toast">¡Datos copiados al portapapeles!</div>
 
     <div class="container">
         <h1>Análisis de Kaspa</h1>
         <div id="loading">Cargando datos...</div>
         <div id="resultados"></div>
+        <button id="retry-btn" style="display:none;">Reintentar carga</button>
         <div id="chart-container">
             <canvas id="precioChart"></canvas>
         </div>
@@ -233,22 +224,17 @@
 
     <audio id="alertSound" src="https://www.soundjay.com/buttons/beep-01a.mp3" preload="auto"></audio>
 
-    <!-- Calculadora mejorada con persistencia y ARS -->
     <div id="kaspa-calculator">
         <h3>Calculadora de valor (persiste en tu navegador)</h3>
-        
         <label for="kaspa-amount">Cantidad de Kaspa que tenés:</label><br>
         <input type="number" id="kaspa-amount" placeholder="Ej: 10000" min="0" step="0.0001">
-        
         <button id="clear-amount" style="margin-left: 10px; background: #ff5722; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;">
             Limpiar
         </button>
-
         <div id="value-display" style="margin-top: 15px; font-size: 1.1em; font-weight: bold;">
             <div>Valor en USD: <span id="usd-value">-</span></div>
             <div>Valor en ARS: <span id="ars-value">-</span></div>
         </div>
-
         <p style="font-size: 0.85em; color: #777; margin-top: 10px;">
             El valor se actualiza automáticamente con el precio actual. Tus Kaspa quedan guardados localmente.
         </p>
@@ -269,16 +255,15 @@
         <p id="asesor-recomendacion">Esperando análisis...</p>
     </div>
 
-    <p id="version">Versión: alpha . 0023</p>
+    <p id="version">Versión: alpha . 0024</p>
 
     <script>
         let chart;
         let currentPrice = 0;
         let soundEnabled = true;
+        const arsPerUsd = 1200; // ← Cambia este valor cuando quieras (tasa blue/oficial)
 
-        // Tasa ARS/USD - CAMBIAR ESTE VALOR CUANDO SEA NECESARIO
-        const arsPerUsd = 1200; // ← Actualiza este valor con la tasa blue/oficial/MEP que uses
-
+        // Funciones auxiliares (sin cambios)
         function calcularSMA(precios) {
             const suma = precios.reduce((acc, [_, precio]) => acc + precio, 0);
             return Number((suma / precios.length).toFixed(4));
@@ -430,40 +415,80 @@
             }
         }
 
+        // Calculadora persistente
+        function updateCalculatorValues() {
+            const amount = parseFloat(document.getElementById('kaspa-amount').value) || 0;
+            const usdValue = amount * currentPrice;
+            const arsValue = usdValue * arsPerUsd;
+
+            document.getElementById('usd-value').textContent = usdValue > 0 ? `$${usdValue.toFixed(2)} USD` : '-';
+            document.getElementById('ars-value').textContent = arsValue > 0 ? `$${arsValue.toLocaleString('es-AR')} ARS` : '-';
+        }
+
+        // Cargar cantidad guardada
+        window.addEventListener('load', () => {
+            const saved = localStorage.getItem('kaspaAmount');
+            if (saved) {
+                document.getElementById('kaspa-amount').value = saved;
+                updateCalculatorValues();
+            }
+        });
+
+        document.getElementById('kaspa-amount').addEventListener('input', () => {
+            const amount = parseFloat(document.getElementById('kaspa-amount').value) || 0;
+            localStorage.setItem('kaspaAmount', amount);
+            updateCalculatorValues();
+        });
+
+        document.getElementById('clear-amount').addEventListener('click', () => {
+            if (confirm('¿Borrar cantidad guardada?')) {
+                localStorage.removeItem('kaspaAmount');
+                document.getElementById('kaspa-amount').value = '';
+                updateCalculatorValues();
+            }
+        });
+
+        // Función principal con manejo de errores mejorado
         async function analizarKaspa() {
             const resultadosDiv = document.getElementById('resultados');
             const loadingDiv = document.getElementById('loading');
-            const ultimaActualizacionDiv = document.getElementById('ultima-actualizacion');
-            const alertSound = document.getElementById('alertSound');
-            const asesorRecomendacion = document.getElementById('asesor-recomendacion');
+            const retryBtn = document.getElementById('retry-btn');
+            const ultimaDiv = document.getElementById('ultima-actualizacion');
+            const asesor = document.getElementById('asesor-recomendacion');
 
             loadingDiv.style.display = 'block';
             resultadosDiv.innerHTML = '';
-            asesorRecomendacion.innerHTML = 'Esperando análisis...';
+            retryBtn.style.display = 'none';
+            asesor.innerHTML = 'Esperando análisis...';
 
             try {
                 const proxy = 'https://corsproxy.io/?';
                 const precioUrl = proxy + encodeURIComponent('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd');
                 const chartUrl = proxy + encodeURIComponent('https://api.coingecko.com/api/v3/coins/kaspa/market_chart?vs_currency=usd&days=14&interval=daily');
 
-                const precioActualResponse = await fetch(precioUrl);
-                const datosHistoricosResponse = await fetch(chartUrl);
+                const precioRes = await fetch(precioUrl);
+                if (!precioRes.ok) throw new Error(`HTTP ${precioRes.status} en precio`);
 
-                const precioActual = await precioActualResponse.json();
-                const datosHistoricos = await datosHistoricosResponse.json();
+                const precioData = await precioRes.json();
+                if (!precioData.kaspa || !precioData.kaspa.usd) {
+                    throw new Error("Formato inesperado de CoinGecko (usd no encontrado)");
+                }
 
-                currentPrice = Number(precioActual.kaspa.usd);
-                if (isNaN(currentPrice)) currentPrice = parseFloat(precioActual.kaspa.usd) || 0;
+                currentPrice = Number(precioData.kaspa.usd) || 0;
 
-                const precios = datosHistoricos.prices;
+                const chartRes = await fetch(chartUrl);
+                if (!chartRes.ok) throw new Error(`HTTP ${chartRes.status} en gráfico`);
+
+                const chartData = await chartRes.json();
+                const precios = chartData.prices || [];
+
+                if (precios.length < 14) throw new Error("Datos históricos insuficientes");
 
                 const smaCorto = calcularSMA(precios.slice(-5));
                 const smaLargo = calcularSMA(precios.slice(-14));
-
-                const preciosValores = precios.map(([_, precio]) => precio);
+                const preciosValores = precios.map(p => p[1]);
                 const soporte = Math.min(...preciosValores);
                 const resistencia = Math.max(...preciosValores);
-
                 const atr = calcularATR(precios);
                 const fiboLevels = calcularFibonacci(soporte, resistencia);
 
@@ -494,131 +519,81 @@
                     const precio = currentPrice.toFixed(6);
 
                     guardarAlerta(tipo, precio);
-
                     alert(`¡Alerta ${tipo}! Precio: $${precio}`);
-                    if (soundEnabled) {
-                        alertSound.play().catch(err => console.log("Error al reproducir sonido:", err));
-                    }
+                    if (soundEnabled) alertSound.play().catch(() => {});
                     mostrarSugerenciaAsesor(tipo, precioSugerido, soporte, resistencia, atr, fiboLevels);
                 }
 
                 const ahora = new Date().toLocaleString('es-ES');
-                ultimaActualizacionDiv.textContent = `Última actualización: ${ahora}`;
+                ultimaDiv.textContent = `Última actualización: ${ahora}`;
 
                 actualizarMaxRebote();
-
-                // Actualizar calculadora con nuevo precio
                 updateCalculatorValues();
 
             } catch (error) {
-                resultadosDiv.innerHTML = `<div class="recomendacion vender">Error al cargar datos: ${error.message}<br><br>Intenta recargar (F5) o abrir con servidor local.</div>`;
+                resultadosDiv.innerHTML = `<div class="recomendacion vender">Error al cargar datos: ${error.message}</div>`;
+                retryBtn.style.display = 'block';
             } finally {
                 loadingDiv.style.display = 'none';
             }
         }
 
+        // Reintentar carga
+        document.getElementById('retry-btn').addEventListener('click', analizarKaspa);
+
         function mostrarSugerenciaAsesor(tipo, precioSugerido, soporte, resistencia, atr, fiboLevels) {
-            const asesorRecomendacion = document.getElementById('asesor-recomendacion');
-            let sugerencia = '';
+            const div = document.getElementById('asesor-recomendacion');
+            let texto = '';
 
             if (tipo === 'COMPRA') {
-                const precioVentaSugerido = resistencia + atr;
-                sugerencia = `Como asesor financiero con experiencia en criptomonedas, te recomiendo comprar ahora a ~$${precioSugerido} y poner una orden de venta a ~$${precioVentaSugerido.toFixed(4)} (resistencia + ATR o Fib 61.8%). Esto te permite aprovechar la tendencia alcista mientras gestionas el riesgo.`;
+                const venta = resistencia + atr;
+                texto = `Como asesor financiero con experiencia en criptomonedas, te recomiendo comprar ahora a ~$${precioSugerido} y poner orden de venta a ~$${venta.toFixed(4)} (resistencia + ATR o Fib 61.8%).`;
             } else if (tipo === 'VENTA') {
-                const precioCompraSugerido = soporte - atr;
-                sugerencia = `Como asesor financiero con experiencia en criptomonedas, te recomiendo vender ahora a ~$${precioSugerido} y poner una orden de compra a ~$${precioCompraSugerido.toFixed(4)} (soporte - ATR o Fib 38.2%). Esto te permite tomar ganancias y comprar más barato en una corrección.`;
+                const compra = soporte - atr;
+                texto = `Como asesor financiero con experiencia en criptomonedas, te recomiendo vender ahora a ~$${precioSugerido} y poner orden de compra a ~$${compra.toFixed(4)} (soporte - ATR o Fib 38.2%).`;
             }
 
-            asesorRecomendacion.innerHTML = sugerencia;
+            div.innerHTML = texto;
         }
 
         // Copiar datos
         document.getElementById('copy-data-btn').addEventListener('click', () => {
             const datos = document.querySelectorAll('.dato');
-            const recomendacionDiv = document.querySelector('.recomendacion');
-            const ultimaDiv = document.getElementById('ultima-actualizacion');
+            const recoDiv = document.querySelector('.recomendacion');
+            const ultima = document.getElementById('ultima-actualizacion').textContent.trim();
 
             let texto = "Análisis de Kaspa\n\n";
 
             const orden = [
-                { label: "Precio actual:", selector: ".precio" },
-                { label: "SMA 5 días:", selector: ".sma:nth-child(2)" },
-                { label: "SMA 14 días:", selector: ".sma:nth-child(3)" },
-                { label: "Soporte:", selector: ".tecnico:nth-child(4)" },
-                { label: "Resistencia:", selector: ".tecnico:nth-child(5)" },
-                { label: "ATR (aprox.):", selector: ".tecnico:nth-child(6)" },
-                { label: "Fibonacci 38.2%:", selector: ".tecnico:nth-child(7)" },
-                { label: "Fibonacci 61.8%:", selector: ".tecnico:nth-child(8)" }
+                "Precio actual:",
+                "SMA 5 días:",
+                "SMA 14 días:",
+                "Soporte:",
+                "Resistencia:",
+                "ATR (aprox.):",
+                "Fibonacci 38.2%:",
+                "Fibonacci 61.8%:"
             ];
 
-            orden.forEach(item => {
-                const elem = document.querySelector(item.selector);
-                if (elem) {
-                    const valor = elem.textContent.trim().replace(item.label + ' ', '');
-                    texto += `${item.label} ${valor}\n`;
+            datos.forEach((d, i) => {
+                if (orden[i]) {
+                    texto += `${orden[i]} ${d.textContent.trim().replace(orden[i] + ' ', '')}\n`;
                 }
             });
 
-            if (recomendacionDiv) {
-                const recomendacionText = recomendacionDiv.firstChild.textContent.trim();
-                const sugerenciaText = recomendacionDiv.querySelector('.sugerencia')?.textContent.trim() || '';
-                texto += `\n${recomendacionText}${sugerenciaText ? `\n${sugerenciaText}` : ''}\n`;
+            if (recoDiv) {
+                texto += `\n${recoDiv.textContent.trim().replace(/\s+/g, ' ')}\n`;
             }
 
-            if (ultimaDiv) {
-                texto += `\n${ultimaDiv.textContent.trim()}`;
-            }
+            texto += `\n${ultima}`;
 
             navigator.clipboard.writeText(texto).then(() => {
-                const toast = document.getElementById('copy-toast');
-                toast.style.opacity = '1';
-                setTimeout(() => { toast.style.opacity = '0'; }, 2000);
-            }).catch(err => {
-                console.error('Error al copiar:', err);
-                alert('No se pudo copiar. Copia manualmente.');
-            });
+                document.getElementById('copy-toast').style.opacity = '1';
+                setTimeout(() => { document.getElementById('copy-toast').style.opacity = '0'; }, 2000);
+            }).catch(() => alert('No se pudo copiar. Copia manualmente.'));
         });
 
-        // Calculadora con persistencia y ARS
-        function updateCalculatorValues() {
-            const amountInput = document.getElementById('kaspa-amount');
-            const amount = parseFloat(amountInput.value) || 0;
-
-            const usdValue = amount * currentPrice;
-            const arsValue = usdValue * arsPerUsd;
-
-            document.getElementById('usd-value').textContent = 
-                usdValue > 0 ? `$${usdValue.toFixed(2)} USD` : '-';
-
-            document.getElementById('ars-value').textContent = 
-                arsValue > 0 ? `$${arsValue.toLocaleString('es-AR')} ARS` : '-';
-        }
-
-        // Cargar cantidad guardada al iniciar
-        window.addEventListener('load', () => {
-            const savedAmount = localStorage.getItem('kaspaAmount');
-            if (savedAmount) {
-                document.getElementById('kaspa-amount').value = savedAmount;
-                updateCalculatorValues();
-            }
-        });
-
-        // Guardar cantidad cuando cambia
-        document.getElementById('kaspa-amount').addEventListener('input', () => {
-            const amount = parseFloat(document.getElementById('kaspa-amount').value) || 0;
-            localStorage.setItem('kaspaAmount', amount);
-            updateCalculatorValues();
-        });
-
-        // Limpiar cantidad
-        document.getElementById('clear-amount').addEventListener('click', () => {
-            if (confirm('¿Querés borrar la cantidad de Kaspa guardada?')) {
-                localStorage.removeItem('kaspaAmount');
-                document.getElementById('kaspa-amount').value = '';
-                updateCalculatorValues();
-            }
-        });
-
+        // Inicialización
         window.onload = () => {
             analizarKaspa();
             actualizarHistorico();
@@ -627,14 +602,14 @@
             const themeBtn = document.getElementById('theme-toggle');
 
             soundBtn.textContent = soundEnabled ? '♪' : '🔇';
-            soundBtn.title = soundEnabled ? 'Sonido de alerta: ON' : 'Sonido de alerta: OFF';
+            soundBtn.title = soundEnabled ? 'ON' : 'OFF';
             themeBtn.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '💡';
-            themeBtn.title = document.body.classList.contains('dark-mode') ? 'Modo Claro' : 'Modo Oscuro';
+            themeBtn.title = document.body.classList.contains('dark-mode') ? 'Claro' : 'Oscuro';
 
             soundBtn.addEventListener('click', () => {
                 soundEnabled = !soundEnabled;
                 soundBtn.textContent = soundEnabled ? '♪' : '🔇';
-                soundBtn.title = soundEnabled ? 'Sonido de alerta: ON' : 'Sonido de alerta: OFF';
+                soundBtn.title = soundEnabled ? 'ON' : 'OFF';
             });
 
             themeBtn.addEventListener('click', () => {
@@ -642,26 +617,20 @@
                 if (document.body.classList.contains('dark-mode')) {
                     document.body.classList.add('grayscale');
                     themeBtn.textContent = '☀️';
-                    themeBtn.title = 'Modo Claro';
+                    themeBtn.title = 'Claro';
                 } else {
                     document.body.classList.remove('grayscale');
                     themeBtn.textContent = '💡';
-                    themeBtn.title = 'Modo Oscuro';
+                    themeBtn.title = 'Oscuro';
                 }
             });
 
-            document.getElementById('delete-all-alerts').addEventListener('click', () => {
-                if (confirm("⚠️ ¿Seguro que querés BORRAR TODAS las alertas? Esta acción NO se puede deshacer.")) {
-                    localStorage.removeItem('kaspaAlertas');
-                    actualizarHistorico();
-                    alert("¡Todas las alertas han sido eliminadas! 🗑️");
-                }
-            });
+            document.getElementById('delete-all-alerts').addEventListener('click', borrarTodasAlertas);
         };
 
         setInterval(analizarKaspa, 300000);
     </script>
 
-    <!-- Versión: alpha . 0023 -->
+    <!-- Versión: alpha . 0024 -->
 </body>
 </html>
