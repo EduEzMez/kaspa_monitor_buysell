@@ -357,16 +357,32 @@
             asesorRecomendacion.innerHTML = 'Esperando análisis...';
 
             try {
-                // Fuente principal: CoinPaprika (sin proxy, más estable)
-                const precioResponse = await fetch('https://api.coinpaprika.com/v1/tickers/kas-kaspa');
-                if (!precioResponse.ok) throw new Error(`HTTP ${precioResponse.status} en CoinPaprika`);
+                // Fuente principal para precio: CoinPaprika (sin proxy)
+                let currentPriceTemp = 0;
+                try {
+                    const precioResponse = await fetch('https://api.coinpaprika.com/v1/tickers/kas-kaspa');
+                    if (!precioResponse.ok) throw new Error(`HTTP ${precioResponse.status} en CoinPaprika`);
+                    const precioData = await precioResponse.json();
+                    if (!precioData?.quotes?.USD?.price) throw new Error("Precio no disponible en CoinPaprika");
+                    currentPriceTemp = Number(precioData.quotes.USD.price);
+                } catch (papError) {
+                    console.warn("CoinPaprika falló:", papError);
+                }
 
-                const precioData = await precioResponse.json();
-                if (!precioData?.quotes?.USD?.price) throw new Error("Precio no disponible en CoinPaprika");
+                // Fallback a CoinGecko si CoinPaprika falla
+                if (currentPriceTemp <= 0) {
+                    const proxy = 'https://corsproxy.io/?';
+                    const precioUrl = proxy + encodeURIComponent('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd');
+                    const precioResponse = await fetch(precioUrl);
+                    if (!precioResponse.ok) throw new Error(`HTTP ${precioResponse.status} en CoinGecko`);
+                    const precioData = await precioResponse.json();
+                    if (!precioData?.kaspa?.usd) throw new Error("Formato CoinGecko inválido");
+                    currentPriceTemp = Number(precioData.kaspa.usd);
+                }
 
-                currentPrice = Number(precioData.quotes.USD.price);
+                currentPrice = currentPriceTemp;
 
-                // Gráfico de CoinGecko (con proxy solo aquí)
+                // Intentamos gráfico de CoinGecko
                 let precios = [];
                 try {
                     const proxy = 'https://corsproxy.io/?';
@@ -380,24 +396,25 @@
                     console.warn("Gráfico falló:", chartError);
                 }
 
-                // Si no hay histórico, usamos valores dummy para no romper
-                if (precios.length < 14) {
+                // Si no hay datos históricos válidos → mensaje y valores dummy
+                if (precios.length < 5) {
                     precios = Array(14).fill([Date.now(), currentPrice]);
+                    resultadosDiv.innerHTML += '<div style="color:#ff9800; text-align:center; margin:10px 0; font-weight:bold;">Gráfico no disponible temporalmente (datos históricos fallaron)</div>';
                 }
 
                 const smaCorto = calcularSMA(precios.slice(-5));
                 const smaLargo = calcularSMA(precios.slice(-14));
-                const preciosValores = precios.map(([_, p]) => p);
-                const soporte = Math.min(...preciosValores);
-                const resistencia = Math.max(...preciosValores);
-                const atr = calcularATR(precios);
-                const fiboLevels = calcularFibonacci(soporte, resistencia);
+                const preciosValores = precios.map(([_, p]) => p).filter(p => !isNaN(p));
+                const soporte = preciosValores.length > 0 ? Math.min(...preciosValores) : currentPrice;
+                const resistencia = preciosValores.length > 0 ? Math.max(...preciosValores) : currentPrice;
+                const atr = precios.length >= 2 ? calcularATR(precios) : 0.001;
+                const fiboLevels = soporte && resistencia ? calcularFibonacci(soporte, resistencia) : { '38.2': currentPrice, '61.8': currentPrice };
 
                 const { recomendacion, precioSugerido } = analizarTendencia(
                     currentPrice, smaCorto, smaLargo, soporte, resistencia, atr, fiboLevels
                 );
 
-                resultadosDiv.innerHTML = `
+                resultadosDiv.innerHTML += `
                     <div class="dato precio">Precio actual: $${currentPrice.toFixed(6)}</div>
                     <div class="dato sma">SMA 5 días: $${smaCorto.toFixed(4)}</div>
                     <div class="dato sma">SMA 14 días: $${smaLargo.toFixed(4)}</div>
