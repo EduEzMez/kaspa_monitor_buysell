@@ -208,6 +208,18 @@
         #asesor-recomendacion { font-size: 16px; line-height: 1.5; }
         #version { text-align: center; font-size: 12px; color: #888; margin-top: 20px; }
         body.dark-mode #version { color: #aaa; }
+        #retry-btn {
+            margin: 10px auto;
+            display: block;
+            padding: 10px 20px;
+            background: #2196f3;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        #retry-btn:hover { background: #1976d2; }
     </style>
 </head>
 <body>
@@ -225,6 +237,7 @@
         <h1>Análisis de Kaspa</h1>
         <div id="loading">Cargando datos...</div>
         <div id="resultados"></div>
+        <button id="retry-btn" style="display:none;">Reintentar carga</button>
         <div id="chart-container">
             <canvas id="precioChart"></canvas>
         </div>
@@ -436,10 +449,12 @@
             const ultimaActualizacionDiv = document.getElementById('ultima-actualizacion');
             const alertSound = document.getElementById('alertSound');
             const asesorRecomendacion = document.getElementById('asesor-recomendacion');
+            const retryBtn = document.getElementById('retry-btn');
 
             loadingDiv.style.display = 'block';
             resultadosDiv.innerHTML = '';
             asesorRecomendacion.innerHTML = 'Esperando análisis...';
+            if (retryBtn) retryBtn.style.display = 'none';
 
             try {
                 const proxy = 'https://corsproxy.io/?';
@@ -447,15 +462,30 @@
                 const chartUrl = proxy + encodeURIComponent('https://api.coingecko.com/api/v3/coins/kaspa/market_chart?vs_currency=usd&days=14&interval=daily');
 
                 const precioActualResponse = await fetch(precioUrl);
-                const datosHistoricosResponse = await fetch(chartUrl);
+                if (!precioActualResponse.ok) {
+                    throw new Error(`HTTP ${precioActualResponse.status} al obtener precio`);
+                }
 
                 const precioActual = await precioActualResponse.json();
-                const datosHistoricos = await datosHistoricosResponse.json();
+
+                // Verificación segura para evitar el error "undefined (reading 'usd')"
+                if (!precioActual || !precioActual.kaspa || typeof precioActual.kaspa.usd !== 'number') {
+                    throw new Error("Datos de precio inválidos o no disponibles (usd no encontrado)");
+                }
 
                 currentPrice = Number(precioActual.kaspa.usd);
-                if (isNaN(currentPrice)) currentPrice = parseFloat(precioActual.kaspa.usd) || 0;
 
-                const precios = datosHistoricos.prices;
+                const datosHistoricosResponse = await fetch(chartUrl);
+                if (!datosHistoricosResponse.ok) {
+                    throw new Error(`HTTP ${datosHistoricosResponse.status} al obtener histórico`);
+                }
+
+                const datosHistoricos = await datosHistoricosResponse.json();
+                const precios = datosHistoricos.prices || [];
+
+                if (precios.length === 0) {
+                    throw new Error("No se recibieron datos históricos");
+                }
 
                 const smaCorto = calcularSMA(precios.slice(-5));
                 const smaLargo = calcularSMA(precios.slice(-14));
@@ -507,11 +537,15 @@
 
                 actualizarMaxRebote();
 
-                // Actualizar calculadora con nuevo precio
-                updateCalculatorValues();
-
             } catch (error) {
-                resultadosDiv.innerHTML = `<div class="recomendacion vender">Error al cargar datos: ${error.message}<br><br>Intenta recargar (F5) o abrir con servidor local.</div>`;
+                resultadosDiv.innerHTML = `
+                    <div class="recomendacion vender">
+                        Error al cargar datos: ${error.message}<br><br>
+                        Posibles causas: bloqueo temporal de CoinGecko o proxy saturado.<br>
+                        Intenta recargar (F5), cambiar de red o usar VPN.
+                    </div>
+                `;
+                if (retryBtn) retryBtn.style.display = 'block';
             } finally {
                 loadingDiv.style.display = 'none';
             }
@@ -657,6 +691,10 @@
                     alert("¡Todas las alertas han sido eliminadas! 🗑️");
                 }
             });
+
+            // Botón reintentar (si existe en el HTML)
+            const retryBtn = document.getElementById('retry-btn');
+            if (retryBtn) retryBtn.addEventListener('click', analizarKaspa);
         };
 
         setInterval(analizarKaspa, 300000);
