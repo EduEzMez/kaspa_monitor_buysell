@@ -81,14 +81,6 @@
             transition: opacity 0.4s ease;
             font-weight: bold;
         }
-        #kaspa-calculator { margin-top: 20px; padding: 20px; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        body.dark-mode #kaspa-calculator { background-color: #2e2e2e; box-shadow: 0 2px 5px rgba(0,0,0,0.5); }
-        #kaspa-calculator label { display: block; margin-bottom: 8px; font-weight: bold; }
-        #kaspa-amount { padding: 8px; width: 180px; font-size: 16px; }
-        #clear-amount { padding: 8px 12px; background: #ff5722; color: white; border: none; border-radius: 6px; cursor: pointer; margin-left: 10px; }
-        #clear-amount:hover { background: #e64a19; }
-        #value-display { margin-top: 15px; font-size: 1.2em; font-weight: bold; }
-        #value-display div { margin: 8px 0; }
         #alert-history { margin-top: 30px; padding: 15px; background-color: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         body.dark-mode #alert-history { background-color: #2e2e2e; }
         #alert-list { list-style: none; padding: 0; max-height: 400px; overflow-y: auto; }
@@ -152,22 +144,6 @@
 
     <audio id="alertSound" src="https://www.soundjay.com/buttons/beep-01a.mp3" preload="auto"></audio>
 
-    <div id="kaspa-calculator">
-        <h3>Calculadora de valor (persiste en tu navegador)</h3>
-        <label for="kaspa-amount">Cantidad de Kaspa que tenés:</label><br>
-        <input type="number" id="kaspa-amount" placeholder="Ej: 10000" min="0" step="0.0001">
-        <button id="clear-amount" style="margin-left: 10px; background: #ff5722; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer;">
-            Limpiar
-        </button>
-        <div id="value-display" style="margin-top: 15px; font-size: 1.1em; font-weight: bold;">
-            <div>Valor en USD: <span id="usd-value">-</span></div>
-            <div>Valor en ARS: <span id="ars-value">-</span></div>
-        </div>
-        <p style="font-size: 0.85em; color: #777; margin-top: 10px;">
-            El valor se actualiza automáticamente con el precio actual. Tus Kaspa quedan guardados localmente.
-        </p>
-    </div>
-
     <div id="alert-history">
         <h2>Histórico de Alertas (últimas 10)</h2>
         <div class="history-buttons">
@@ -183,14 +159,12 @@
         <p id="asesor-recomendacion">Esperando análisis...</p>
     </div>
 
-    <p id="version">Versión: alpha . 0023</p>
+    <p id="version">V.001</p>
 
     <script>
         let chart;
         let currentPrice = 0;
         let soundEnabled = true;
-
-        const arsPerUsd = 1200;
 
         function calcularSMA(precios) {
             const suma = precios.reduce((acc, [_, precio]) => acc + precio, 0);
@@ -357,67 +331,50 @@
             asesorRecomendacion.innerHTML = 'Esperando análisis...';
 
             try {
-                // Fuente principal para precio: CoinPaprika (sin proxy)
-                let currentPriceTemp = 0;
-                try {
-                    const precioResponse = await fetch('https://api.coinpaprika.com/v1/tickers/kas-kaspa');
-                    if (!precioResponse.ok) throw new Error(`HTTP ${precioResponse.status} en CoinPaprika`);
-                    const precioData = await precioResponse.json();
-                    if (!precioData?.quotes?.USD?.price) throw new Error("Precio no disponible en CoinPaprika");
-                    currentPriceTemp = Number(precioData.quotes.USD.price);
-                } catch (papError) {
-                    console.warn("CoinPaprika falló:", papError);
+                const proxy = 'https://corsproxy.io/?';
+                const precioUrl = proxy + encodeURIComponent('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd');
+                const chartUrl = proxy + encodeURIComponent('https://api.coingecko.com/api/v3/coins/kaspa/market_chart?vs_currency=usd&days=14&interval=daily');
+
+                const precioActualResponse = await fetch(precioUrl);
+                if (!precioActualResponse.ok) throw new Error(`HTTP ${precioActualResponse.status} al obtener precio`);
+
+                const precioActual = await precioActualResponse.json();
+
+                // Verificación segura para evitar error undefined 'usd'
+                if (!precioActual || !precioActual.kaspa || typeof precioActual.kaspa.usd !== 'number') {
+                    throw new Error("Datos de precio inválidos o no disponibles (usd no encontrado)");
                 }
 
-                // Fallback a CoinGecko si CoinPaprika falla
-                if (currentPriceTemp <= 0) {
-                    const proxy = 'https://corsproxy.io/?';
-                    const precioUrl = proxy + encodeURIComponent('https://api.coingecko.com/api/v3/simple/price?ids=kaspa&vs_currencies=usd');
-                    const precioResponse = await fetch(precioUrl);
-                    if (!precioResponse.ok) throw new Error(`HTTP ${precioResponse.status} en CoinGecko`);
-                    const precioData = await precioResponse.json();
-                    if (!precioData?.kaspa?.usd) throw new Error("Formato CoinGecko inválido");
-                    currentPriceTemp = Number(precioData.kaspa.usd);
-                }
+                currentPrice = Number(precioActual.kaspa.usd);
 
-                currentPrice = currentPriceTemp;
+                const datosHistoricosResponse = await fetch(chartUrl);
+                if (!datosHistoricosResponse.ok) throw new Error(`HTTP ${datosHistoricosResponse.status} al obtener histórico`);
 
-                // Intentamos gráfico de CoinGecko
-                let precios = [];
-                try {
-                    const proxy = 'https://corsproxy.io/?';
-                    const chartUrl = proxy + encodeURIComponent('https://api.coingecko.com/api/v3/coins/kaspa/market_chart?vs_currency=usd&days=14&interval=daily');
-                    const chartResponse = await fetch(chartUrl);
-                    if (chartResponse.ok) {
-                        const chartData = await chartResponse.json();
-                        precios = chartData.prices || [];
-                    }
-                } catch (chartError) {
-                    console.warn("Gráfico falló:", chartError);
-                }
+                const datosHistoricos = await datosHistoricosResponse.json();
+                const precios = datosHistoricos.prices || [];
 
-                // Si no hay datos históricos válidos → mensaje y valores dummy
-                if (precios.length < 5) {
-                    precios = Array(14).fill([Date.now(), currentPrice]);
-                    resultadosDiv.innerHTML += '<div style="color:#ff9800; text-align:center; margin:10px 0; font-weight:bold;">Gráfico no disponible temporalmente (datos históricos fallaron)</div>';
+                if (precios.length === 0) {
+                    throw new Error("No se recibieron datos históricos");
                 }
 
                 const smaCorto = calcularSMA(precios.slice(-5));
                 const smaLargo = calcularSMA(precios.slice(-14));
-                const preciosValores = precios.map(([_, p]) => p).filter(p => !isNaN(p));
-                const soporte = preciosValores.length > 0 ? Math.min(...preciosValores) : currentPrice;
-                const resistencia = preciosValores.length > 0 ? Math.max(...preciosValores) : currentPrice;
-                const atr = precios.length >= 2 ? calcularATR(precios) : 0.001;
-                const fiboLevels = soporte && resistencia ? calcularFibonacci(soporte, resistencia) : { '38.2': currentPrice, '61.8': currentPrice };
+
+                const preciosValores = precios.map(([_, precio]) => precio);
+                const soporte = Math.min(...preciosValores);
+                const resistencia = Math.max(...preciosValores);
+
+                const atr = calcularATR(precios);
+                const fiboLevels = calcularFibonacci(soporte, resistencia);
 
                 const { recomendacion, precioSugerido } = analizarTendencia(
                     currentPrice, smaCorto, smaLargo, soporte, resistencia, atr, fiboLevels
                 );
 
-                resultadosDiv.innerHTML += `
+                resultadosDiv.innerHTML = `
                     <div class="dato precio">Precio actual: $${currentPrice.toFixed(6)}</div>
-                    <div class="dato sma">SMA 5 días: $${smaCorto.toFixed(4)}</div>
-                    <div class="dato sma">SMA 14 días: $${smaLargo.toFixed(4)}</div>
+                    <div class="dato sma">SMA 5 días: $${smaCorto}</div>
+                    <div class="dato sma">SMA 14 días: $${smaLargo}</div>
                     <div class="dato tecnico">Soporte: $${soporte.toFixed(4)}</div>
                     <div class="dato tecnico">Resistencia: $${resistencia.toFixed(4)}</div>
                     <div class="dato tecnico">ATR (aprox.): $${atr.toFixed(4)}</div>
@@ -454,11 +411,11 @@
                 resultadosDiv.innerHTML = `
                     <div class="recomendacion vender">
                         Error al cargar datos: ${error.message}<br><br>
-                        Posibles causas: bloqueo temporal de la API o conexión inestable.<br>
-                        Prueba recargar (F5), cambiar de red o usar VPN.
+                        Posibles causas: bloqueo temporal de CoinGecko o proxy saturado.<br>
+                        Intenta recargar (F5), cambiar de red o usar VPN.
                     </div>
                 `;
-                document.getElementById('retry-btn').style.display = 'block';
+                if (retryBtn) retryBtn.style.display = 'block';
             } finally {
                 loadingDiv.style.display = 'none';
             }
@@ -525,42 +482,6 @@
             });
         });
 
-        function updateCalculatorValues() {
-            const amountInput = document.getElementById('kaspa-amount');
-            const amount = parseFloat(amountInput.value) || 0;
-
-            const usdValue = amount * currentPrice;
-            const arsValue = usdValue * arsPerUsd;
-
-            document.getElementById('usd-value').textContent = 
-                usdValue > 0 ? `$${usdValue.toFixed(2)} USD` : '-';
-
-            document.getElementById('ars-value').textContent = 
-                arsValue > 0 ? `$${arsValue.toLocaleString('es-AR')} ARS` : '-';
-        }
-
-        window.addEventListener('load', () => {
-            const savedAmount = localStorage.getItem('kaspaAmount');
-            if (savedAmount) {
-                document.getElementById('kaspa-amount').value = savedAmount;
-                updateCalculatorValues();
-            }
-        });
-
-        document.getElementById('kaspa-amount').addEventListener('input', () => {
-            const amount = parseFloat(document.getElementById('kaspa-amount').value) || 0;
-            localStorage.setItem('kaspaAmount', amount);
-            updateCalculatorValues();
-        });
-
-        document.getElementById('clear-amount').addEventListener('click', () => {
-            if (confirm('¿Querés borrar la cantidad de Kaspa guardada?')) {
-                localStorage.removeItem('kaspaAmount');
-                document.getElementById('kaspa-amount').value = '';
-                updateCalculatorValues();
-            }
-        });
-
         window.onload = () => {
             analizarKaspa();
             actualizarHistorico();
@@ -606,6 +527,6 @@
         setInterval(analizarKaspa, 300000);
     </script>
 
-    <!-- Versión: alpha . 0023 -->
+    <!-- Versión: V.001 -->
 </body>
 </html>
